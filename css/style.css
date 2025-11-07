@@ -66,6 +66,43 @@ a:focus {
     padding-top: 10px;
 }
 
+/******************************/
+/********** Float CSS ***********/
+/******************************/
+body .floating-cta {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+}
+
+.cta-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: white;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+}
+
+.cta-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.35);
+}
+
+/* Individual button colors */
+.cta-btn.phone { background-color: #007bff; }       /* Blue for Call */
+.cta-btn.whatsapp { background-color: #25D366; }    /* WhatsApp green */
+.cta-btn.book { background-color: #d4af37; }        /* Golden for Book Now */
+
 
 /**********************************/
 /********** Top Bar CSS ***********/
@@ -319,14 +356,14 @@ a:focus {
 }
 
 .hero .hero-text h1 {
-    color: #343148;
+    color: #ffffff;
     font-size: 60px;
     font-weight: 700;
     margin-bottom: 20px;
 }
 
 .hero .hero-text p {
-    color: #343148;
+    color: #ffffff;
     font-size: 18px;
     margin-bottom: 25px;
 }
@@ -334,18 +371,18 @@ a:focus {
 .hero .hero-btn .btn {
     padding: 12px 20px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 1px;
     color: #ffffff;
-    background: #343148;
+    background: #6f8b46;
     border-radius: 0;
     transition: .3s;
 }
 
 .hero .hero-btn .btn:hover {
-    color: #343148;
-    background: #ffffff;
-    font-weight: 700;
+    color: #6f8b46;
+    background: #ffffff;    
+    font-weight: 800;
 }
 
 .hero .hero-btn .btn:first-child {
@@ -415,6 +452,129 @@ a:focus {
         letter-spacing: 0;
     }
 }
+
+/* Hero Video Background */
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  background-color: #6f8b46; /* fallback background if video fails */
+}
+
+.hero .video-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.hero .video-background video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(70%);
+  display: block;
+  background: #6f8b46; /* fallback color while loading */
+}
+
+/* Ensure container content stays above video */
+.hero .container-fluid {
+  position: relative;
+  z-index: 2;
+}
+
+.hero .hero-text {
+  padding: 30px;
+}
+
+.hero h1 {
+  color: #fff;
+  font-size: 3rem;
+  font-weight: 700;
+}
+
+.hero p {
+  color: #eee;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.hero .btn {
+  background-color: #343148;
+  color: #fff;
+  padding: 12px 25px;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.hero .btn:hover {
+  background-color: #6f8b46;
+  color: #fff;
+}
+
+/* 🔹 Mobile & Tablet Responsiveness */
+@media (max-width: 991px) {
+  .hero {
+    min-height: 70vh;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+     color: #fff;
+  }
+
+  .hero p {
+    font-size: 1rem;
+     color: #fff;
+  }
+  .hero .btn {
+  background-color: #343148;
+  color: #fff;
+  transition: 0.3s;
+  }
+  .hero .btn:hover {
+  background-color: #6f8b46;
+  color: #fff;
+  }
+  .hero .video-background video {
+    object-position: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero {
+    min-height: 60vh;
+  }
+
+  .hero h1 {
+    font-size: 1.6rem;
+     color: #fff;
+  }
+
+  .hero p {
+    font-size: 0.9rem;
+     color: #fff;
+  }
+  .hero .btn {
+  background-color: #343148;
+  color: #fff;
+  transition: 0.3s;
+  }
+  .hero .btn:hover {
+  background-color: #6f8b46;
+  color: #fff;
+  }
+}
+
 
 
 /*******************************/
@@ -2040,7 +2200,7 @@ a:focus {
 /* Query Form Section */
 .query-form {
     padding: 80px 0;
-    background: #fffaf5; /* light cream background to match yoga theme */
+    background: var(--body-bg); /* light cream background to match yoga theme */
 }
 
 .query-form .form-group {
@@ -2115,6 +2275,8 @@ a:focus {
     text-transform: uppercase;
     letter-spacing: 2px;
     margin-bottom: 45px;
+    text-decoration: none;
+
 }
 
 .footer .footer-info .footer-logo span {
@@ -2155,6 +2317,7 @@ a:focus {
 
 .footer .footer-social a {
     display: inline-block;
+    text-decoration: none;
 }
 
 .footer .footer-social a i {
@@ -2162,6 +2325,7 @@ a:focus {
     font-size: 20px;
     color: #ffffff;
     transition: .3s;
+    text-decoration: none;
 }
 
 .footer .footer-social a:last-child i {
@@ -2195,6 +2359,7 @@ a:focus {
 .footer .copyright p a {
     color: #ffffff;
     font-weight: 600;
+    text-decoration: none;
 }
 
 .footer .copyright p a:hover {
@@ -2207,4 +2372,18 @@ a:focus {
         margin: 5px 0;
         text-align: center;
     }
+    .footer .footer-menu {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer .footer-menu p {
+        border: none; /* remove divider line */
+        padding: 5px 0;
+        font-size: 18px; /* slightly smaller for readability */
+        line-height: 24px;
+    }
 }
+
+
