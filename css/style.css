@@ -2200,7 +2200,7 @@ body .floating-cta {
 /* Query Form Section */
 .query-form {
     padding: 80px 0;
-    background: var(--body-bg); /* light cream background to match yoga theme */
+    /* background: var(--body-bg); /* light cream background to match yoga theme */
 }
 
 .query-form .form-group {

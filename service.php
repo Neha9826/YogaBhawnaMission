@@ -74,39 +74,7 @@
                             </p>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.6s">
-                        <div class="service-item">
-                            <div class="service-icon">
-                                <i class="flaticon-workout-3"></i>
-                            </div>
-                            <h3>Himalayan Yoga & Meditation Retreats</h3>
-                            <p>
-                                These week-long programs emphasize practices such as inner silence, yoga nidra, mantra sadhana, and pranayama conducted near the Ganga River.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.8s">
-                        <div class="service-item">
-                            <div class="service-icon">
-                                <i class="flaticon-workout-4"></i>
-                            </div>
-                            <h3>Body & Spirituality</h3>
-                            <p>
-                                Lorem ipsum dolor sit amet elit. Phasellus nec pretium mi. Curabitur facilisis ornare velit non
-                            </p>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="1s">
-                        <div class="service-item">
-                            <div class="service-icon">
-                                <i class="flaticon-yoga-pose"></i>
-                            </div>
-                            <h3>Body & Mind</h3>
-                            <p>
-                                Lorem ipsum dolor sit amet elit. Phasellus nec pretium mi. Curabitur facilisis ornare velit non
-                            </p>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -149,6 +117,15 @@
         <!-- Footer End -->
 
         <a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
+
+        <div class="whatsapp widget-sec">
+          <a href="tel:+919917003456" class="cta-btn phone" title="Call Now">
+            <i class="fa fa-phone-alt"></i>
+          </a>
+          <a aria-label="Chat on WhatsApp" href="https://wa.me/+919917003456" target="_blank" class="cta-btn whatsapp" title="Chat on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+          </a>
+        </div>
 
         <!-- JavaScript Libraries -->
         <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>

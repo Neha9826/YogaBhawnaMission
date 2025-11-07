@@ -340,16 +340,16 @@
                             <div class="price-body">
                                 <div class="price-description">
                                     <ul>
-                                        <li>Yoga Alliance(RYT-300)-Certificate</li>
-                                        <li>Advanced</li>
-                                        <li>Uttarkashi</li>
-                                        <li>English</li>
+                                        <li>Yoga Alliance-Certificate</li>
+                                        <li>Level: Advanced</li>
+                                        <li>Location: Uttarkashi</li>
+                                        <li>Language: English</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="price-footer">
                                 <div class="price-action">
-                                    <a class="btn" href="">Join Now</a>
+                                    <a class="btn" href="list.php">Join Now</a>
                                 </div>
                             </div>
                         </div>
@@ -371,16 +371,16 @@
                             <div class="price-body">
                                 <div class="price-description">
                                     <ul>
-                                        <li>Yoga Alliance(RYT-200)-Certificate</li>
-                                        <li>Beginner to Intermediate</li>
-                                        <li>Uttarkashi</li>
-                                        <li>English</li>
+                                        <li>Yoga Alliance-Certificate</li>
+                                        <li>Level: Beginner to Intermediate</li>
+                                        <li>Location: Uttarkashi</li>
+                                        <li>Language: English</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="price-footer">
                                 <div class="price-action">
-                                    <a class="btn" href="">Join Now</a>
+                                    <a class="btn" href="list.php">Join Now</a>
                                 </div>
                             </div>
                         </div>
@@ -399,16 +399,16 @@
                             <div class="price-body">
                                 <div class="price-description">
                                     <ul>
-                                        <li>Yoga Alliance(RYT-500)-Certificate</li>
-                                        <li>Advanced Pro</li>
-                                        <li>Uttarkashi</li>
-                                        <li>English</li>
+                                        <li>Yoga Alliance-Certificate</li>
+                                        <li>Level: Advanced Pro</li>
+                                        <li>Location: Uttarkashi</li>
+                                        <li>Language: English</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="price-footer">
                                 <div class="price-action">
-                                    <a class="btn" href="">Join Now</a>
+                                    <a class="btn" href="list.php">Join Now</a>
                                 </div>
                             </div>
                         </div>
@@ -523,19 +523,28 @@
 
          <!-- Location -->
 
-         <div class="section-header text-center wow zoomIn" data-wow-delay="0.1s">
-            <p>Find Us</p>
-            <h2>Our Location</h2>
-                <div id="map" class="map map_single add_bottom_30 " style="width: 100%; height: 450px;">
+         <div class="container"> 
+            <div class="row">
+                <div class="col-12">
+                    <div class="section-header text-center wow zoomIn" data-wow-delay="0.1s">
+                        <p>Find Us</p>
+                        <h2>Our Location</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-full-width">
+            <div id="map" class="map map_single add_bottom_30" style="width: 100%; height: 450px;">
                 <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3429.554389786153!2d78.4070514!3d30.7309254!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3908ed25c638acad%3A0xb58aa23be89327bd!2sYoga%20Bhawna%20Mission%20-%20Yoga%20Teacher%20Training%20Himalaya!5e0!3m2!1sen!2sin!4v1759989557131!5m2!1sen!2sin" 
-                        width="900" 
+                        width="100%" 
                         height="450px" 
                         style="border:0;" 
                         allowfullscreen="" 
                         loading="lazy" 
                         referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
-                </div>
+            </div>
         </div>
         
         <!-- Footer Start -->
