@@ -1,63 +1,270 @@
 <?php
-// === YOUR PHP LOGIC (100% UNCHANGED) ===
 require_once __DIR__ . '/yoga_session.php';
-include __DIR__ . '/db.php';     // Assumes db.php is in this directory, not /../
+include __DIR__ . '/db.php'; // Assumes db.php is in this directory
 
-// --- Read filters from GET (ensure types and defaults)
+// === 1. DEFINE DYNAMIC FILTER CONFIG ===
+$dynamic_filter_config = [
+    'deal' => ['table' => 'yoga_package_deals', 'link_table' => 'yoga_package_selected_deals', 'col' => 'deal_id', 'title' => 'Deals'],
+    'dayonline' => ['table' => 'yoga_package_dayonline', 'link_table' => 'yoga_package_selected_dayonline', 'col' => 'dayonline_id', 'title' => 'Day or Online'],
+    'language' => ['table' => 'yoga_package_languages', 'link_table' => 'yoga_package_selected_languages', 'col' => 'language_id', 'title' => 'Language of instruction'],
+    'meal' => ['table' => 'yoga_package_meals', 'link_table' => 'yoga_package_selected_meals', 'col' => 'meal_id', 'title' => 'Meals'],
+    'food' => ['table' => 'yoga_package_food', 'link_table' => 'yoga_package_selected_food', 'col' => 'food_id', 'title' => 'Food'],
+    'airport_transfer' => ['table' => 'yoga_package_airport_transfers', 'link_table' => 'yoga_package_selected_airport_transfers', 'col' => 'transfer_id', 'title' => 'Airport transfer'],
+    'type' => ['table' => 'yoga_package_types', 'link_table' => 'yoga_package_selected_types', 'col' => 'type_id', 'title' => 'Types'],
+    'category' => ['table' => 'yoga_package_categories', 'link_table' => 'yoga_package_selected_categories', 'col' => 'category_id', 'title' => 'Categories'],
+];
+
+// === 2. PRICE RANGE FILTER CONFIG ===
+$price_range_config = [
+    '0-10000' => ['min' => 0, 'max' => 10000, 'label' => 'Below ₹10,000'],
+    '10000-25000' => ['min' => 10000, 'max' => 25000, 'label' => '₹10,000 - ₹25,000'],
+    '25000-50000' => ['min' => 25000, 'max' => 50000, 'label' => '₹25,000 - ₹50,000'],
+    '50000-100000' => ['min' => 50000, 'max' => 100000, 'label' => '₹50,000 - ₹100,000'],
+    '100000' => ['min' => 100000, 'max' => 9999999, 'label' => 'Over ₹100,000'],
+];
+
+// === 3. DEFINE STATIC LOCATION HIERARCHY ===
+$all_locations_static = [
+    'Asia' => [
+        'India' => [
+            'Odisha' => ['Bhubaneswar' => true, 'Puri' => true, 'Cuttack' => true],
+            'Goa' => ['Panaji' => true, 'Margao' => true],
+            'Uttarakhand' => ['Rishikesh' => true, 'Dehradun' => true],
+            'Himachal Pradesh' => ['Dharamshala' => true, 'Shimla' => true],
+        ],
+        'Thailand' => [
+            'Chiang Mai' => ['Chiang Mai City' => true],
+            'Phuket' => ['Phuket Town' => true],
+        ],
+        'Indonesia' => [
+            'Bali' => ['Ubud' => true, 'Kuta' => true],
+        ],
+        'Japan' => [
+            'Kanto' => ['Tokyo' => true],
+            'Kansai' => ['Kyoto' => true, 'Osaka' => true],
+        ],
+    ],
+    'Europe' => [
+        'Spain' => [
+            'Andalusia' => ['Seville' => true, 'Malaga' => true],
+            'Catalonia' => ['Barcelona' => true],
+        ],
+        'Portugal' => [
+            'Lisbon' => ['Lisbon' => true],
+            'Algarve' => ['Faro' => true],
+        ],
+        'Germany' => [
+            'Berlin' => ['Berlin' => true],
+            'Bavaria' => ['Munich' => true],
+        ],
+        'United Kingdom' => [
+            'England' => ['London' => true, 'Manchester' => true],
+            'Scotland' => ['Edinburgh' => true],
+        ],
+    ],
+    'North America' => [
+        'USA' => [
+            'California' => ['Los Angeles' => true, 'San Francisco' => true],
+            'New York' => ['New York City' => true],
+            'Florida' => ['Miami' => true],
+        ],
+        'Canada' => [
+            'British Columbia' => ['Vancouver' => true],
+            'Ontario' => ['Toronto' => true],
+        ],
+        'Mexico' => [
+            'Quintana Roo' => ['Tulum' => true, 'Cancun' => true],
+        ],
+    ],
+    'South America' => [
+        'Brazil' => [
+            'Rio de Janeiro' => ['Rio de Janeiro' => true],
+            'Bahia' => ['Salvador' => true],
+        ],
+        'Peru' => [
+            'Cusco' => ['Cusco' => true, 'Sacred Valley' => true],
+        ],
+    ],
+    'Africa' => [
+        'Morocco' => [
+            'Marrakech-Safi' => ['Marrakech' => true],
+        ],
+        'South Africa' => [
+            'Western Cape' => ['Cape Town' => true],
+        ],
+    ],
+    'Australia' => [
+        'New South Wales' => [
+            'Sydney' => true,
+            'Byron Bay' => true,
+        ],
+        'Victoria' => [
+            'Melbourne' => true,
+        ],
+    ],
+    'Antarctica' => []
+];
+
+
+// === 4. READ ALL FILTERS FROM GET ===
 $q = isset($_GET['q']) ? trim($_GET['q']) : '';
-$locations = isset($_GET['location']) ? (array) $_GET['location'] : [];
-$durations = isset($_GET['duration']) ? (array) $_GET['duration'] : [];
-$price_min = isset($_GET['price_min']) ? (int) $_GET['price_min'] : 0;
-$price_max = isset($_GET['price_max']) ? (int) $_GET['price_max'] : 0;
-$page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-$perPage = 9;
-$offset = ($page - 1) * $perPage;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$sort = isset($_GET['sort']) ? $_GET['sort'] : '';
 
-// --- Build WHERE array (use proper table aliases)
-$where = []; // IMPORTANT: initialize to avoid undefined variable errors
+$filter_durations = isset($_GET['duration']) ? (array)$_GET['duration'] : [];
+$filter_continents = isset($_GET['continent']) ? (array)$_GET['continent'] : [];
+$filter_countries = isset($_GET['country']) ? (array)$_GET['country'] : [];
+$filter_states = isset($_GET['state']) ? (array)$_GET['state'] : [];
+$filter_cities = isset($_GET['city']) ? (array)$_GET['city'] : [];
+$filter_price_ranges = isset($_GET['price_range']) ? (array)$_GET['price_range'] : [];
+$filter_private = isset($_GET['private']) ? (array)$_GET['private'] : []; // For "Private" filter
+
+$dynamic_filters = [];
+foreach ($dynamic_filter_config as $key => $config) {
+    $dynamic_filters[$key] = isset($_GET[$key]) ? (array)$_GET[$key] : [];
+}
+
+// === 5. FETCH DYNAMIC DATA FOR SIDEBAR ===
+
+function get_filter_items($conn, $table, $link_table, $col) {
+    $sql = "
+        SELECT T1.id, T1.name, COUNT(DISTINCT p.id) as count
+        FROM $table T1
+        JOIN $link_table T2 ON T1.id = T2.$col
+        JOIN yoga_packages p ON T2.package_id = p.id
+        JOIN yoga_retreats r ON p.retreat_id = r.id
+        WHERE p.is_published = 1 AND r.is_published = 1
+        GROUP BY T1.id, T1.name
+        HAVING count > 0
+        ORDER BY T1.name ASC
+    ";
+    $res = $conn->query($sql);
+    return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+$sidebar_data = [];
+foreach ($dynamic_filter_config as $key => $config) {
+    $sidebar_data[$key] = get_filter_items($conn, $config['table'], $config['link_table'], $config['col']);
+}
+
+$all_locations_hierarchical = $all_locations_static;
+
+$dur_res = $conn->query("
+    SELECT p.nights, COUNT(p.id) as count
+    FROM yoga_packages p
+    JOIN yoga_retreats r ON p.retreat_id = r.id
+    WHERE p.nights > 0 AND p.is_published = 1 AND r.is_published = 1
+    GROUP BY p.nights
+    ORDER BY p.nights ASC
+");
+$all_durations = $dur_res ? $dur_res->fetch_all(MYSQLI_ASSOC) : [];
+
+
+// === 6. BUILD THE DYNAMIC WHERE CLAUSE ===
+$where = [];
+$where[] = "p.is_published = 1 AND r.is_published = 1";
 
 if ($q !== '') {
     $q_esc = $conn->real_escape_string($q);
-    // search packages, retreats, organization names and country
     $where[] = "(p.title LIKE '%$q_esc%' OR p.description LIKE '%$q_esc%' OR r.title LIKE '%$q_esc%' OR o.name LIKE '%$q_esc%' OR o.country LIKE '%$q_esc%')";
 }
 
-// location filter: we use organizations.country as "location"
-if (count($locations) > 0) {
-    $escaped = array_map(function($v) use ($conn) {
-        return "'" . $conn->real_escape_string($v) . "'";
-    }, $locations);
-    $where[] = "o.country IN (" . implode(',', $escaped) . ")";
+// Location Filter
+$location_where = [];
+if (!empty($filter_continents)) {
+    $escaped = array_map(fn($v) => "'" . $conn->real_escape_string($v) . "'", $filter_continents);
+    $location_where[] = "o.continent IN (" . implode(',', $escaped) . ")";
+}
+if (!empty($filter_countries)) {
+    $escaped = array_map(fn($v) => "'" . $conn->real_escape_string($v) . "'", $filter_countries);
+    $location_where[] = "o.country IN (" . implode(',', $escaped) . ")";
+}
+if (!empty($filter_states)) {
+    $escaped = array_map(fn($v) => "'" . $conn->real_escape_string($v) . "'", $filter_states);
+    $location_where[] = "o.state IN (" . implode(',', $escaped) . ")";
+}
+if (!empty($filter_cities)) {
+    $escaped = array_map(fn($v) => "'" . $conn->real_escape_string($v) . "'", $filter_cities);
+    $location_where[] = "o.city IN (" . implode(',', $escaped) . ")";
+}
+if (!empty($location_where)) {
+    $where[] = "(" . implode(' OR ', $location_where) . ")";
 }
 
-// duration filter: use p.nights
-if (count($durations) > 0) {
-    $escaped = array_map(function($v) { return (int)$v; }, $durations);
+// Duration (Nights) Filter
+if (!empty($filter_durations)) {
+    $escaped = array_map('intval', $filter_durations);
     $where[] = "p.nights IN (" . implode(',', $escaped) . ")";
 }
 
-// price filters: based on package base price (price_per_person)
-if ($price_min > 0) {
-    $where[] = "p.price_per_person >= " . (int)$price_min;
-}
-if ($price_max > 0) {
-    $where[] = "p.price_per_person <= " . (int)$price_max;
+// Price Range Filter
+if (!empty($filter_price_ranges)) {
+    $price_where = [];
+    foreach ($filter_price_ranges as $range_key) {
+        if (isset($price_range_config[$range_key])) {
+            $min = $price_range_config[$range_key]['min'];
+            $max = $price_range_config[$range_key]['max'];
+            $price_where[] = "(p.price_per_person >= $min AND p.price_per_person <= $max)";
+        }
+    }
+    if (!empty($price_where)) {
+        $where[] = "(" . implode(' OR ', $price_where) . ")";
+    }
 }
 
-// --- Count total matching packages for pagination
+// "Private" Filter (Placeholder logic)
+// When ready, you'll need to add `is_private` column to yoga_packages
+if (!empty($filter_private)) {
+    $private_where = [];
+    if (in_array('private', $filter_private)) {
+        // $private_where[] = "p.is_private = 1";
+    }
+    if (in_array('group', $filter_private)) {
+        // $private_where[] = "p.is_private = 0";
+    }
+    if (!empty($private_where)) {
+        // $where[] = "(" . implode(' OR ', $private_where) . ")";
+    }
+    // As this isn't implemented, we add no WHERE clause, but the filter shows
+}
+
+
+// Add Dynamic Filters (Deals, Languages, etc.)
+foreach ($dynamic_filter_config as $key => $config) {
+    if (!empty($dynamic_filters[$key])) {
+        $escaped_ids = implode(',', array_map('intval', $dynamic_filters[$key]));
+        $where[] = "EXISTS (
+            SELECT 1 FROM {$config['link_table']}
+            WHERE package_id = p.id AND {$config['col']} IN ($escaped_ids)
+        )";
+    }
+}
+
+$where_sql = (count($where) > 0) ? " WHERE " . implode(' AND ', $where) : '';
+
+// === 7. BUILD PAGINATION & SORTING ===
+$perPage = 9;
+$offset = ($page - 1) * $perPage;
+
 $countSql = "
   SELECT COUNT(DISTINCT p.id) AS cnt
   FROM yoga_packages p
   JOIN yoga_retreats r ON p.retreat_id = r.id
   JOIN organizations o ON r.organization_id = o.id
-  WHERE p.is_published = 1 AND r.is_published = 1
-  " . (count($where) > 0 ? " AND " . implode(' AND ', $where) : '');
-
+  $where_sql
+";
 $countRes = $conn->query($countSql);
 $total = ($countRes && $countRes->num_rows) ? (int)$countRes->fetch_assoc()['cnt'] : 0;
-$totalPages = max(1, ceil($total / $perPage)); // Use $total and $perPage
+$totalPages = max(1, ceil($total / $perPage));
 
-// --- Fetch paginated packages
+$orderBy_sql = 'ORDER BY p.created_at DESC';
+if ($sort === 'price_asc') {
+    $orderBy_sql = 'ORDER BY p.price_per_person ASC';
+} elseif ($sort === 'price_desc') {
+    $orderBy_sql = 'ORDER BY p.price_per_person DESC';
+}
+
+// === 8. BUILD AND RUN FINAL QUERY ===
 $sql = "
   SELECT
     p.id,
@@ -71,30 +278,75 @@ $sql = "
     o.id AS org_id,
     o.name AS org_name,
     o.country,
-    (SELECT image_path FROM yoga_retreat_images WHERE retreat_id = r.id LIMIT 1) AS image_path
+    (SELECT image_path FROM yoga_retreat_images WHERE retreat_id = r.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) AS image_path
   FROM yoga_packages p
   JOIN yoga_retreats r ON p.retreat_id = r.id
   JOIN organizations o ON r.organization_id = o.id
-  WHERE p.is_published = 1 AND r.is_published = 1
-  " . (count($where) > 0 ? " AND " . implode(' AND ', $where) : '') . "
-  ORDER BY p.created_at DESC
+  $where_sql
+  GROUP BY p.id
+  $orderBy_sql
   LIMIT $offset, $perPage
 ";
-// ***** FIX: The line above was line 85. I removed "ORDER BY display_order ASC" from the subquery. *****
 
 $res = $conn->query($sql);
 if (!$res) {
-    // Handle query error gracefully
     echo "Error: " . $conn->error;
-    $res = null; // Set $res to null so the rest of the page doesn't fail
+    $res = null;
 }
 
+// === 9. HELPER FUNCTIONS FOR HTML ===
+function build_query_string($exclude_key = null) {
+    $params = $_GET;
+    if ($exclude_key && isset($params[$exclude_key])) {
+        unset($params[$exclude_key]);
+    }
+    return http_build_query($params);
+}
 
-// --- Prepare data for sidebar filters (distinct countries and nights)
-$locs = $conn->query("SELECT DISTINCT country FROM organizations WHERE country<>'' ORDER BY country ASC");
-$dres = $conn->query("SELECT DISTINCT nights FROM yoga_packages WHERE nights > 0 ORDER BY nights ASC");
+function render_filter_group($title, $input_name, $items, $selected_values, $item_key = 'id', $item_label = 'name') {
+    if (empty($items)) return;
 
-$pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
+    $html = "<h5 class='filter-title'>$title</h5>";
+    $html .= "<div style='padding-bottom: 1rem;' class='filter-content filter-scroll-box'>";
+    
+    foreach ($items as $item) {
+        $value = htmlspecialchars($item[$item_key]);
+        $label = htmlspecialchars($item[$item_label]);
+        $count = (int)$item['count'];
+        $id = "cb_{$input_name}_{$value}";
+        $checked = in_array($item[$item_key], $selected_values) ? 'checked' : '';
+
+        $html .= "<div class='form-check'>";
+        $html .= "<input class='form-check-input' type='checkbox' name='{$input_name}[]' value='$value' id='$id' $checked>";
+        $html .= "<label class='form-check-label' for='$id'>$label ($count)</label>";
+        $html .= "</div>";
+    }
+    
+    $html .= "</div>";
+    return $html;
+}
+
+function render_price_filter($config, $selected_ranges) {
+    $html = "<h5 class='filter-title'>Price per trip (₹)</h5>";
+    $html .= "<div style='padding-bottom: 1rem;' class='filter-content filter-scroll-box'>";
+    
+    foreach ($config as $key => $range) {
+        $value = htmlspecialchars($key);
+        $label = htmlspecialchars($range['label']);
+        $id = "cb_price_range_{$value}";
+        $checked = in_array($key, $selected_ranges) ? 'checked' : '';
+
+        $html .= "<div class='form-check'>";
+        $html .= "<input class='form-check-input' type='checkbox' name='price_range[]' value='$value' id='$id' $checked>";
+        $html .= "<label class='form-check-label' for='$id'>$label</label>";
+        $html .= "</div>";
+    }
+    
+    $html .= "</div>";
+    return $html;
+}
+
+$pageTitle = "Find & Book Yoga Retreats";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,35 +355,57 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($pageTitle) ?></title>
-  
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  
-  <!-- Custom CSS (The one you have) -->
   <link rel="stylesheet" href="yoga.css">
-  
-  <!-- Google Fonts (from reference site) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Open+Sans:wght@400;600;700&display_swap" rel="stylesheet">
-  
-  <!-- Font Awesome (for your footer) -->
-  <!-- This link supports 'fas', 'far', etc. -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    .filter-sidebar .accordion-button {
+        padding: 0.5rem 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+    .filter-sidebar .accordion-button:not(.collapsed) {
+        background-color: #e9ecef;
+    }
+    .filter-sidebar .accordion-button:focus {
+        box-shadow: none;
+    }
+    .filter-sidebar .accordion-body {
+        padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+        background-color: #fff;
+    }
+    .filter-sidebar .accordion-item {
+        border: none;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .filter-sidebar .accordion-item:last-of-type {
+        border-bottom: 1px solid #dee2e6;
+    }
+    .filter-sidebar .form-check {
+        font-size: 0.85rem;
+    }
+    .filter-sidebar .form-check-label {
+        cursor: pointer;
+    }
+    .filter-sidebar .filter-scroll-box {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+  </style>
 </head>
-<body class="results-page-body"> <!-- New body class for scoping -->
+<body class="results-page-body">
 
   <?php include 'topBar.php'; ?>
-  <!-- YOUR EXISTING NAVBAR (UNCHANGED) -->
   <?php include 'ybm_navbar.php'; ?>
-
-  <!-- YOUR EXISTING VIDEO BANNER (UNCHANGED) -->
   <?php include 'videoBanner.php'; ?>
 
-  <!-- Main Content Area -->
   <main class="main-content container py-4">
     <div class="row g-4">
       <div class="container-fluid">
@@ -143,315 +417,173 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
             </div>
         </div>
       </div>
-      <!-- === Sidebar (NEW layout, matches refr.mp4) === -->
+      
       <aside class="col-lg-3">
         <div class="filter-sidebar" id="filter-sidebar">
-          <form id="filterForm" action="index.php" method="GET">
+          <form id="filterForm" action="list.php" method="GET">
             <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
 
-              <h4 style="padding-bottom: 1rem;" class="filter-title-bold">Filters</h4>
+            <h4 style="padding-bottom: 1rem;" class="filter-title-bold">Filters</h4>
 
-              <h5 class="filter-title">Deals</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="deal" id="deal_all"><label class="form-check-label" for="deal_all">All deals (1303)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="deal" id="deal_early"><label class="form-check-label" for="deal_early">Early bird (569)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="deal" id="deal_exclusive"><label class="form-check-label" for="deal_exclusive">Exclusive Gifts (443)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="deal" id="deal_special"><label class="form-check-label" for="deal_special">Special offer (174)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="deal" id="deal_last"><label class="form-check-label" for="deal_last">Last minute (117)</label></div>
-              </div>
+            <?php echo render_filter_group(
+                $dynamic_filter_config['deal']['title'],
+                'deal',
+                $sidebar_data['deal'],
+                $dynamic_filters['deal']
+            ); ?>
             
-              <h5  class="filter-title-new">New</h5>
-              <h6 style="text:muted;">Day & Online Experiences</h6>
-              <div style="padding-bottom: 1rem;" class="filter-content">
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="new_online"><label class="form-check-label" for="new_online">Online experiences (280)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="new_day"><label class="form-check-label" for="new_day">Day Activities (16)</label></div>
-              </div>
-            
-              <h5 class="filter-title">Destinations</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-accordion">
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDest" role="button" aria-expanded="false" aria-controls="collapseDest">
-                  <div class="sb-sidenav-collapse-arrow">The Americas & Caribbean <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseDest">
-                  <div class="filter-collapse-body">
-                    <div class="form-check"><input class="form-check-input" type="radio" id="dest_1"><label class="form-check-label" for="dest_1">Anywhere in Americas & Caribbean</label></div>
-                      <div class="form-check">
-                        <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDestsub" role="button" aria-expanded="false" aria-controls="collapseDestsub">
-                          <div class="sb-sidenav-collapse-arrow">USA <i class="fas fa-angle-down"></i></div>
-                        </a>
-                        <div class="collapse" id="collapseDestsub">
-                          <div class="filter-collapse-body">
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_1"><label class="form-check-label" for="dest_1">Anywhere in USA</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_2"><label class="form-check-label" for="dest_2">Europe</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_3"><label class="form-check-label" for="dest_3">Asia & Oceania</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_4"><label class="form-check-label" for="dest_4">Africa & the Middle East</label></div>
-                          </div>
+            <?php echo render_filter_group(
+                $dynamic_filter_config['dayonline']['title'],
+                'dayonline',
+                $sidebar_data['dayonline'],
+                $dynamic_filters['dayonline']
+            ); ?>
+
+            <h5 class="filter-title">Destinations</h5>
+            <div class="accordion accordion-flush" id="destinationAccordion">
+                <?php if (empty($all_locations_hierarchical)): ?>
+                    <small class="text-muted p-2">No destinations found.</small>
+                <?php endif; ?>
+
+                <?php foreach ($all_locations_hierarchical as $continent => $countries): ?>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-cont-<?= md5($continent) ?>">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-cont-<?= md5($continent) ?>">
+                                <input class="form-check-input me-2" type="checkbox" name="continent[]" value="<?= htmlspecialchars($continent) ?>" id="cb_cont_<?= md5($continent) ?>" <?= in_array($continent, $filter_continents) ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="cb_cont_<?= md5($continent) ?>"><?= htmlspecialchars($continent) ?></label>
+                            </button>
+                        </h2>
+                        <div id="collapse-cont-<?= md5($continent) ?>" class="accordion-collapse collapse" data-bs-parent="#destinationAccordion">
+                            <div class="accordion-body">
+                                <?php if (empty($countries)): ?>
+                                    <small class="text-muted">No countries listed.</small>
+                                <?php endif; ?>
+                                <?php foreach ($countries as $country => $states): ?>
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading-country-<?= md5($country) ?>">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-country-<?= md5($country) ?>">
+                                                <input class="form-check-input me-2" type="checkbox" name="country[]" value="<?= htmlspecialchars($country) ?>" id="cb_country_<?= md5($country) ?>" <?= in_array($country, $filter_countries) ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="cb_country_<?= md5($country) ?>"><?= htmlspecialchars($country) ?></label>
+                                            </button>
+                                        </h2>
+                                        <div id="collapse-country-<?= md5($country) ?>" class="accordion-collapse collapse" data-bs-parent="#collapse-cont-<?= md5($continent) ?>">
+                                            <div class="accordion-body">
+                                                <?php foreach ($states as $state => $cities): ?>
+                                                    <?php if(empty($state)) continue; ?>
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header" id="heading-state-<?= md5($state) ?>">
+                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-state-<?= md5($state) ?>">
+                                                                <input class="form-check-input me-2" type="checkbox" name="state[]" value="<?= htmlspecialchars($state) ?>" id="cb_state_<?= md5($state) ?>" <?= in_array($state, $filter_states) ? 'checked' : '' ?>>
+                                                                <label class="form-check-label" for="cb_state_<?= md5($state) ?>"><?= htmlspecialchars($state) ?></label>
+                                                            </button>
+                                                        </h2>
+                                                        <div id="collapse-state-<?= md5($state) ?>" class="accordion-collapse collapse" data-bs-parent="#collapse-country-<?= md5($country) ?>">
+                                                            <div class="accordion-body">
+                                                                <?php foreach ($cities as $city => $val): ?>
+                                                                    <?php if(empty($city)) continue; ?>
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox" name="city[]" value="<?= htmlspecialchars($city) ?>" id="cb_city_<?= md5($city) ?>" <?= in_array($city, $filter_cities) ? 'checked' : '' ?>>
+                                                                        <label class="form-check-label" for="cb_city_<?= md5($city) ?>"><?= htmlspecialchars($city) ?></label>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                                
+                                                <?php if(isset($states[''])) {
+                                                    foreach($states[''] as $city => $val) {
+                                                        if(empty($city)) continue;
+                                                        echo '<div class="form-check ms-2">';
+                                                        echo '<input class="form-check-input" type="checkbox" name="city[]" value="'.htmlspecialchars($city).'" id="cb_city_'.md5($city).'" '.(in_array($city, $filter_cities) ? 'checked' : '').'>';
+                                                        echo '<label class="form-check-label" for="cb_city_'.md5($city).'">'.htmlspecialchars($city).'</label>';
+                                                        echo '</div>';
+                                                    }
+                                                } ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
-                      </div>
-                      <div class="form-check">
-                        <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDestsub2" role="button" aria-expanded="false" aria-controls="collapseDestsub2">
-                          <div class="sb-sidenav-collapse-arrow">Costa Rica <i class="fas fa-angle-down"></i></div>
-                        </a>
-                        <div class="collapse" id="collapseDestsub2">
-                          <div class="filter-collapse-body">
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_1"><label class="form-check-label" for="dest_1">Anywhere in Costa Rica</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_2"><label class="form-check-label" for="dest_2">Europe</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_3"><label class="form-check-label" for="dest_3">Asia & Oceania</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_4"><label class="form-check-label" for="dest_4">Africa & the Middle East</label></div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="form-check">
-                        <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDestsub3" role="button" aria-expanded="false" aria-controls="collapseDestsub3">
-                          <div class="sb-sidenav-collapse-arrow">Mexico <i class="fas fa-angle-down"></i></div>
-                        </a>
-                        <div class="collapse" id="collapseDestsub3">
-                          <div class="filter-collapse-body">
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_1"><label class="form-check-label" for="dest_1">Anywhere in Mexico</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_2"><label class="form-check-label" for="dest_2">Europe</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_3"><label class="form-check-label" for="dest_3">Asia & Oceania</label></div>
-                            <div class="form-check"><input class="form-check-input" type="radio" id="dest_4"><label class="form-check-label" for="dest_4">Africa & the Middle East</label></div>
-                          </div>
-                        </div>
-                      </div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDest2" role="button" aria-expanded="false" aria-controls="collapseDest2">
-                  <div class="sb-sidenav-collapse-arrow">Europe <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseDest2">
-                  <div class="filter-collapse-body">
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_1"><label class="form-check-label" for="dest_1">The Americas & Caribbean</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_2"><label class="form-check-label" for="dest_2">Europe</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_3"><label class="form-check-label" for="dest_3">Asia & Oceania</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_4"><label class="form-check-label" for="dest_4">Africa & the Middle East</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDest3" role="button" aria-expanded="false" aria-controls="collapseDest3">
-                  <div class="sb-sidenav-collapse-arrow">Asia & Oceania <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseDest3">
-                  <div class="filter-collapse-body">
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_1"><label class="form-check-label" for="dest_1">The Americas & Caribbean</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_2"><label class="form-check-label" for="dest_2">Europe</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_3"><label class="form-check-label" for="dest_3">Asia & Oceania</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_4"><label class="form-check-label" for="dest_4">Africa & the Middle East</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseDest4" role="button" aria-expanded="false" aria-controls="collapseDest4">
-                  <div class="sb-sidenav-collapse-arrow">Africa & the Middle East <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseDest4">
-                  <div class="filter-collapse-body">
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_1"><label class="form-check-label" for="dest_1">The Americas & Caribbean</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_2"><label class="form-check-label" for="dest_2">Europe</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_3"><label class="form-check-label" for="dest_3">Asia & Oceania</label></div>
-                    <div class="form-check"><input class="form-check-input" type="checkbox" id="dest_4"><label class="form-check-label" for="dest_4">Africa & the Middle East</label></div>
-                  </div>
-                </div>
-              </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <?php echo render_filter_group(
+                'Duration (Nights)', 
+                'duration', 
+                $all_durations, 
+                $filter_durations, 
+                'nights',
+                'nights'
+            ); ?>
             
-              <h5 class="filter-title">Arrival date</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="radio" id="date_nov"><label class="form-check-label" for="date_nov">2025 November (4848)</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" id="date_dec"><label class="form-check-label" for="date_dec">2025 December (4340)</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" id="date_jan"><label class="form-check-label" for="date_jan">2026 January (3860)</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" id="date_feb"><label class="form-check-label" for="date_feb">2026 February (3646)</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" id="date_mar"><label class="form-check-label" for="date_mar">2026 March (3813)</label></div>
-                <a href="#" class="filter-show-more">Show more</a>
-              </div>
+            <?php echo render_price_filter($price_range_config, $filter_price_ranges); ?>
             
-              <h5 class="filter-title">Duration</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="duration_static" id="dur_1"><label class="form-check-label" for="dur_1">2 days (93)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="duration_static" id="dur_2"><label class="form-check-label" for="dur_2">From 3 to 7 days (4040)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="duration_static" id="dur_3"><label class="form-check-label" for="dur_3">From 1 to 2 weeks (2786)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="duration_static" id="dur_4"><label class="form-check-label" for="dur_4">More than 2 weeks (1491)</label></div>
-              </div>
-            
-              <h5 class="filter-title">Price per trip</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="price_range" id="price_1"><label class="form-check-label" for="price_1">Below Rs. 20000 (236)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="price_range" id="price_2"><label class="form-check-label" for="price_2">From Rs. 20000 to Rs. 50000 (1311)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="price_range" id="price_3"><label class="form-check-label" for="price_3">From Rs. 50000 to Rs. 80000 (1479)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="price_range" id="price_4"><label class="form-check-label" for="price_4">From Rs. 80000 to Rs. 150000 (2079)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="price_range" id="price_5"><label class="form-check-label" for="price_5">From Rs. 150000 to Rs. 300000 (1703)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" name="price_range" id="price_6"><label class="form-check-label" for="price_6">More than Rs. 300000 (587)</label></div>
-              </div>
-            
-              <h5 class="filter-title">Private</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content">
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="private_1"><label class="form-check-label" for="private_1">Private retreats (676)</label></div>
-              </div>
-            
-              <h5 class="filter-title">Language of instruction</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="lang_en"><label class="form-check-label" for="lang_en">English (4979)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="lang_de"><label class="form-check-label" for="lang_de">German (397)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="lang_fr"><label class="form-check-label" for="lang_fr">French (290)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="lang_es"><label class="form-check-label" for="lang_es">Spanish (141)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="lang_nl"><label class="form-check-label" for="lang_nl">Dutch (87)</label></div>
-              </div>
-            
-              <h5 class="filter-title">Meals</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="meal_all"><label class="form-check-label" for="meal_all">All meals included (4238)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="meal_bfast"><label class="form-check-label" for="meal_bfast">Breakfast (5881)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="meal_brunch"><label class="form-check-label" for="meal_brunch">Brunch (693)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="meal_lunch"><label class="form-check-label" for="meal_lunch">Lunch (4654)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="meal_dinner"><label class="form-check-label" for="meal_dinner">Dinner (5614)</label></div>
-              </div>
-            
-              <h5 class="filter-title">Food</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-scroll-box">
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                <a href="#" class="filter-show-more">Show more</a>
-              </div>
-            
-              <h5 class="filter-title">Airport transfer</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content">
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="apt_avail"><label class="form-check-label" for="apt_avail">Airport transfer available (2056)</label></div>
-                <div class="form-check"><input class="form-check-input" type="checkbox" id="apt_incl"><label class="form-check-label" for="apt_incl">Airport transfer included (1766)</label></div>
-              </div>
-              
-            
-              <h5 class="filter-title">Categories</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-accordion">
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat" role="button" aria-expanded="false" aria-controls="collapseCat">
-                  <div class="sb-sidenav-collapse-arrow">Budget or luxury <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
+            <h5 class='filter-title'>Private</h5>
+            <div style='padding-bottom: 1rem;' class='filter-content filter-scroll-box'>
+                <div class='form-check'>
+                    <input class='form-check-input' type='checkbox' name='private[]' value='private' id='cb_private' <?= in_array('private', $filter_private) ? 'checked' : '' ?>>
+                    <label class='form-check-label' for='cb_private'>Private Room</label>
                 </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat2" role="button" aria-expanded="false" aria-controls="collapseCat2">
-                  <div class="sb-sidenav-collapse-arrow">Skill Level <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat2">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
+                <div class='form-check'>
+                    <input class='form-check-input' type='checkbox' name='private[]' value='group' id='cb_group' <?= in_array('group', $filter_private) ? 'checked' : '' ?>>
+                    <label class='form-check-label' for='cb_group'>Group (Shared)</label>
                 </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat3" role="button" aria-expanded="false" aria-controls="collapseCat3">
-                  <div class="sb-sidenav-collapse-arrow">Teacher Training <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat3">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat4" role="button" aria-expanded="false" aria-controls="collapseCat4">
-                  <div class="sb-sidenav-collapse-arrow">Spirituality & Chanting <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat4">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat5" role="button" aria-expanded="false" aria-controls="collapseCat5">
-                  <div class="sb-sidenav-collapse-arrow">Health & Wellness <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat5">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-              </div>
+            </div>
             
-              <h5 class="filter-title">Types</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content filter-accordion">
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat" role="button" aria-expanded="false" aria-controls="collapseCat">
-                  <div class="sb-sidenav-collapse-arrow">Sweat & Flow <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat2" role="button" aria-expanded="false" aria-controls="collapseCat2">
-                  <div class="sb-sidenav-collapse-arrow">Mindfulness & Meditation <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat2">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat3" role="button" aria-expanded="false" aria-controls="collapseCat3">
-                  <div class="sb-sidenav-collapse-arrow">Restore & Revitalize <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat3">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-                <a class="filter-collapse-trigger collapsed" data-bs-toggle="collapse" href="#collapseCat4" role="button" aria-expanded="false" aria-controls="collapseCat4">
-                  <div class="sb-sidenav-collapse-arrow">Fitness & Strength <i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapseCat4">
-                  <div class="filter-collapse-body">
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_veg"><label class="form-check-label" for="food_veg">Vegetarian (incl. lacto-ovo) (5599)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_vegan"><label class="form-check-label" for="food_vegan">Vegan (3915)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_gf"><label class="form-check-label" for="food_gf">Gluten-free (2539)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_org"><label class="form-check-label" for="food_org">Organic & whole-foods (2404)</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="food_ayu"><label class="form-check-label" for="food_ayu">Ayurvedic & yogic (incl. naturopathic) (2176)</label></div>
-                  </div>
-                </div>
-              </div>
+            <?php echo render_filter_group(
+                $dynamic_filter_config['language']['title'],
+                'language',
+                $sidebar_data['language'],
+                $dynamic_filters['language']
+            ); ?>
             
-            <h5 class="filter-title">Reviews</h5>
-              <div style="padding-bottom: 1rem;" class="filter-content">
-                <div class="form-check"><input class="form-check-input" type="radio" name="reviews" id="rev_1"><label class="form-check-label" for="rev_1">Excellent (4.5+)</label></div>
-                <div class="form-check"><input class="form-check-input" type="radio" name="reviews" id="rev_2"><label class="form-check-label" for="rev_2">Good (4.0+)</label></div>
-              </div>
+            <?php echo render_filter_group(
+                $dynamic_filter_config['meal']['title'],
+                'meal',
+                $sidebar_data['meal'],
+                $dynamic_filters['meal']
+            ); ?>
             
+            <?php echo render_filter_group(
+                $dynamic_filter_config['food']['title'],
+                'food',
+                $sidebar_data['food'],
+                $dynamic_filters['food']
+            ); ?>
             
+            <?php echo render_filter_group(
+                $dynamic_filter_config['airport_transfer']['title'],
+                'airport_transfer',
+                $sidebar_data['airport_transfer'],
+                $dynamic_filters['airport_transfer']
+            ); ?>
+
+            <?php echo render_filter_group(
+                $dynamic_filter_config['category']['title'],
+                'category',
+                $sidebar_data['category'],
+                $dynamic_filters['category']
+            ); ?>
+            
+            <?php echo render_filter_group(
+                $dynamic_filter_config['type']['title'],
+                'type',
+                $sidebar_data['type'],
+                $dynamic_filters['type']
+            ); ?>
+
             <div class="d-grid gap-2">
               <button class="btn btn-apply-filters" type="submit">Apply Filters</button>
-              <a href="index.php" class="btn btn-clear-filters">Clear All</a>
+              <a href="list.php" class="btn btn-clear-filters">Clear All</a>
             </div>
 
           </form>
         </div>
       </aside>
 
-      <!-- === Results Column === -->
       <section class="col-lg-9">
         <div class="results-header">
           <p class="results-count">
@@ -464,33 +596,34 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
           
           <form method="get" id="sortForm" class="sort-by-form">
               <?php
-              foreach ($locations as $loc) { echo '<input type="hidden" name="location[]" value="' . htmlspecialchars($loc) . '">'; }
-              foreach ($durations as $d) { echo '<input type="hidden" name="duration[]" value="' . htmlspecialchars($d) . '">'; }
-              if ($price_min) echo '<input type="hidden" name="price_min" value="' . (int)$price_min . '">';
-              if ($price_max) echo '<input type="hidden" name="price_max" value="' . (int)$price_max . '">';
-              if ($q) echo '<input type="hidden" name="q" value="' . htmlspecialchars($q) . '">';
+              $query_string_for_sort = build_query_string('sort');
+              parse_str($query_string_for_sort, $params);
+              foreach ($params as $key => $value) {
+                  if (is_array($value)) {
+                      foreach ($value as $val) {
+                          echo '<input type="hidden" name="' . htmlspecialchars($key) . '[]" value="' . htmlspecialchars($val) . '">';
+                      }
+                  } else {
+                      echo '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">';
+                  }
+              }
               ?>
               <label for="sort-select" class="sort-by-label">Sort by:</label>
               <select name="sort" id="sort-select" class="form-select" onchange="this.form.submit()">
-              <option value="">Newest</option>
-              <option value="price_asc">Price low→high</option>
-              <option value="price_desc">Price high→low</option>
+                  <option value="" <?= $sort == '' ? 'selected' : '' ?>>Newest</option>
+                  <option value="price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Price low→high</option>
+                  <option value="price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Price high→low</option>
               </select>
           </form>
         </div>
 
-          <!-- This is the single-column list wrapper -->
           <div class="package-list-wrapper">
             
-            <!-- === Your existing PHP Loop (UNCHANGED LOGIC) === -->
             <?php if ($res && $res->num_rows > 0): ?>
               <?php while ($pkg = $res->fetch_assoc()): ?>
                 <?php
-                  // === YOUR IMAGE LOGIC (FIXED) ===
                   $img = $pkg['image_path'] ? $pkg['image_path'] : 'https://placehold.co/400x300/E0E0E0/777?text=Yoga+Retreat';
                 ?>
-                
-                <!-- NEW Horizontal Card Layout (matches refr.mp4) -->
                 <div class="package-card-horizontal">
                   <div class="row g-0">
                     <div class="col-md-4">
@@ -499,38 +632,31 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
                           <div class="horizontal-image" style="background-image: url('<?= $img ?>');"></div>
                         </a>
                         <button class="btn-wishlist"><i class="bi bi-heart"></i></button>
-                        <span class="package-card-tag-best">Best Seller</span>
                       </div>
                     </div>
-
-                    <div class="col-md-8 d-flex flex-column"> <div class="horizontal-body flex-grow-1"> <div class="card-header-top">
+                    <div class="col-md-8 d-flex flex-column"> 
+                      <div class="horizontal-body flex-grow-1">
+                        <div class="card-header-top">
                           <div class="card-top-left">
                             <i class="bi bi-geo-alt-fill"></i> <span><?= htmlspecialchars($pkg['country']) ?></span>
                           </div>
                           <div class="card-top-right">
-                            <span><i class="bi bi-eye"></i> 132</span>
                             <span><i class="bi bi-star-fill"></i> 4.5 (120)</span>
                           </div>
                         </div>
-
                         <h3 class="package-card-title">
                           <a href="packageDetails.php?id=<?= $pkg['id'] ?>"><?= htmlspecialchars($pkg['package_title']) ?></a>
                         </h3>
-                        
                         <div class="package-card-facilities">
-                          <span><i class="bi bi-airplane"></i> Airport Transfer available</span>
-                          <span><i class="bi bi-cup-straw"></i> <?= htmlspecialchars($pkg['meals_included']) ?></span>
-                          <span><i class="bi bi-universal-access"></i> Vegetarian friendly</span>
+                          <span><i class="bi bi-airplane"></i> Airport Transfer</span>
+                          <span><i class="bi bi-cup-straw"></i> <?= $pkg['meals_included'] ? 'Meals Included' : 'Meals Not Included' ?></span>
                           <span><i class="bi bi-translate"></i> Instructed in English</span>
                         </div>
                       </div>
-
                       <div class="horizontal-footer">
                         <div class="footer-left-info">
-                          <span><i class="bi bi-person"></i> 1 person</span>
                           <span><i class="bi bi-calendar-event"></i> <?= (int)$pkg['nights'] ?> nights</span>
                         </div>
-                        
                         <div class="footer-price-action">
                           <div class="package-card-price">
                             <span class="package-card-price-label">From</span>
@@ -541,13 +667,10 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
                           <a href="packageDetails.php?id=<?= $pkg['id'] ?>" class="btn btn-view-deal">View Deal</a>
                         </div>
                       </div>
-
                     </div>
                   </div>
                 </div>
-              <!-- End Horizontal Card -->
-
-            <?php endwhile; ?>
+              <?php endwhile; ?>
             <?php else: ?>
               <div class="col-12">
                 <div class="alert alert-info" role="alert">
@@ -555,28 +678,28 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
                 </div>
               </div>
             <?php endif; ?>
-            <!-- === End of PHP Loop === -->
           </div>
 
-        <!-- === Your existing Pagination (UNCHANGED LOGIC) === -->
         <?php if ($totalPages > 1): ?>
           <nav aria-label="Page navigation" class="pagination-wrapper">
             <ul class="pagination justify-content-center">
               
+              <?php $pagination_query = build_query_string('page'); ?>
+
               <li class="page-item <?php if ($page <= 1) echo 'disabled'; ?>">
-                <a class="page-link" href="?page=<?= $page - 1 ?>&<?= http_build_query($_GET,'','&') ?>" aria-label="Previous">
+                <a class="page-link" href="?page=<?= $page - 1 ?>&<?= $pagination_query ?>" aria-label="Previous">
                   <span aria-hidden="true">&laquo;</span>
                 </a>
               </li>
               
               <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <li class="page-item <?php if ($page == $i) echo 'active'; ?>">
-                  <a class="page-link" href="?page=<?= $i ?>&<?= http_build_query($_GET,'','&') ?>"><?= $i ?></a>
+                  <a class="page-link" href="?page=<?= $i ?>&<?= $pagination_query ?>"><?= $i ?></a>
                 </li>
               <?php endfor; ?>
               
               <li class="page-item <?php if ($page >= $totalPages) echo 'disabled'; ?>">
-                <a class="page-link" href="?page=<?= $page + 1 ?>&<?= http_build_query($_GET,'','&') ?>" aria-label="Next">
+                <a class="page-link" href="?page=<?= $page + 1 ?>&<?= $pagination_query ?>" aria-label="Next">
                   <span aria-hidden="true">&raquo;</span>
                 </a>
               </li>
@@ -589,18 +712,11 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
     </div>
   </main>
 
-    <?php include 'filterModal.php'; ?>
-
-  <!-- YOUR EXISTING FOOTER (UNCHANGED) -->
+  <?php include 'filterModal.php'; ?>
   <?php include 'includes/footer.php'; ?>
   
-
-  <!-- Bootstrap JS Bundle -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  <!-- Custom JS for navbar behavior (from your original navbar file) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // This is the script from your original yoga_navbar.php
     window.addEventListener('scroll', function() {
       const nav = document.querySelector('.navbar');
       if (window.scrollY > 50) {
@@ -610,28 +726,28 @@ $pageTitle = "Find & Book Yoga Retreats"; // Added for <title>
       }
     });
 
-    // New script for sticky sidebar (from refr.mp4)
     document.addEventListener("scroll", function () {
       const sidebar = document.getElementById('filter-sidebar');
-      if (sidebar && window.innerWidth >= 992) { // Desktop only
-        
-        // Get height of your sticky navbar
+      if (sidebar && window.innerWidth >= 992) {
         const nav = document.querySelector('.navbar.sticky');
         let navHeight = nav ? nav.offsetHeight : 0;
-        
-        // Get height of your search bar (it's not sticky, so this is simpler)
-        // We set the top relative to the main content's padding
         const mainContentTop = document.querySelector('.main-content').offsetTop;
-        const sidebarTopOffset = 20; // 20px padding from top
+        const sidebarTopOffset = 20;
 
         if (window.scrollY > (mainContentTop - navHeight - sidebarTopOffset)) {
            sidebar.style.top = (navHeight + sidebarTopOffset) + 'px';
            sidebar.classList.add('sticky-sidebar');
         } else {
-           sidebar.style.top = '0'; // Reset
+           sidebar.style.top = '0';
            sidebar.classList.remove('sticky-sidebar');
         }
       }
+    });
+    
+    document.querySelectorAll('#destinationAccordion .form-check-input, #destinationAccordion .form-check-label').forEach(el => {
+        el.addEventListener('click', e => {
+            e.stopPropagation();
+        });
     });
   </script>
 </body>

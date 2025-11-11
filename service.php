@@ -13,7 +13,7 @@
         <!-- Nav Bar End -->
 
         <!-- Page Header Start -->
-        <div class="page-header">
+        <div class="page-header service-header">
             <div class="container">
                 <div class="row">
                     <div class="col-12">
@@ -44,11 +44,9 @@
                             </div>
                             <h3>200-Hour Yoga Teacher Training (RYT-200)</h3>
                             <p>
-                                This foundational course is designed for beginners and intermediate practitioners and is recognized by Yoga Alliance (USA).
+                                A foundational course for beginners and intermediate practitioners, registered with Yoga Alliance (USA). It builds grounding in Hatha and Ashtanga yoga, teaching methodology, anatomy, and philosophy, preparing students to begin their teaching journey with confidence.
                             </p>
-                            <p>
-                                The curriculum emphasizes classical Hatha and Ashtanga yoga, philosophical foundations, anatomy, and instructional methodology.
-                            </p>
+                            
                         </div>
                     </div>
                     <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.2s">
@@ -58,7 +56,7 @@
                             </div>
                             <h3>300-Hour Advanced Yoga TTC (RYT-300)</h3>
                             <p>
-                                This program is intended for certified teachers (RYT-200) seeking advanced knowledge in pranayama, meditation, yoga therapy, and Ayurveda.
+                                Designed for certified RYT-200 teachers, this advanced program deepens understanding of pranayama, meditation, yoga therapy, and Ayurveda. It enhances personal practice and teaching skills through the Himalayan approach to yogic science.
                             </p>
                             
                         </div>
@@ -70,7 +68,7 @@
                             </div>
                             <h3>500-Hour Advanced Pro Yoga TTC (RYT-500)</h3>
                             <p>
-                                The 500-Hour Intensive course is suitable for practitioners interested in personal development and immersive experience without the objective of certification. It is particularly appropriate for short-term visitors and spiritual aspirants. spiritual seekers.
+                                A comprehensive and transformative course combining foundational and advanced studies. It unites asana, pranayama, meditation, philosophy, anatomy, and therapeutic yoga, guiding practitioners toward mastery, authenticity, and self-realization.
                             </p>
                         </div>
                     </div>

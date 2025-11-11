@@ -60,6 +60,8 @@
             bottom: 15px;
             left: 15px;
             gap: 8px;
+            width: auto;
+            height: auto;
             }
 
             .whatsapp.widget-sec a i {
@@ -90,5 +92,14 @@
         /* Individual button colors */
         .cta-btn.phone { background-color: #007bff; }       /* Blue for Call */
         .cta-btn.whatsapp { background-color: #25D366; }    /* WhatsApp green */
+
+         @media (max-width: 768px) {
+            .cta-btn {
+                width: 38px;
+                height: 38px;
+                padding: 3px;
+                padding-top: 3px;
+                align-items: center;
+            }
   
     </style>

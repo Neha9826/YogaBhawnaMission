@@ -1,6 +1,5 @@
 <?php
 session_start();
-include __DIR__ . '/config.php';
 include __DIR__ . '/db.php';
 
 if (!isset($_SESSION['yoga_host_id'])) {

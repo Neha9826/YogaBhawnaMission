@@ -1,6 +1,5 @@
 <?php
 session_start();
-include __DIR__ . '/config.php';
 include __DIR__ . '/db.php';
 
 if (!isset($_SESSION['yoga_host_id'])) {
@@ -191,7 +190,7 @@ if (!empty($_FILES['msme_doc']['name'])) {
     </div>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>
 
 <!-- Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>

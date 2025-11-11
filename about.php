@@ -7,7 +7,7 @@
     <body>
         <?php include 'topBar.php'; ?>        
         <?php include 'ybm_navbar.php'; ?>
-        <div class="page-header">
+        <div class="page-header about-header">
             <div class="container">
                 <div class="row">
                     <div class="col-12">
@@ -35,14 +35,10 @@
                         </div>
                         <div class="about-text">
                             <p>
-                                Located on the banks of the Bhagirathi River in Uttarkashi, Yoga Bhawana Mission (YBM) was established to facilitate the rediscovery of inner stillness among practitioners.
-                                The term 'Bhāwanā' in Sanskrit denotes feeling, contemplation, and devotion, which constitute the foundational principles of the institution's teaching philosophy.
-                                At Yoga Bhawana Mission, yoga is conceptualized as a transformative process, emphasizing internal experience over external performance.
+                                Yoga Bhawana Mission (YBM), situated on the sacred banks of the Bhagirathi River in Uttarkashi, Uttarakhand, is not merely a yoga school — it is a Himalayan sanctuary for deep spiritual practice, mindful living, and personal transformation.
                             </p>
                             <p>
-                                The training programs are based on the Himalayan Yogic Tradition, transmitted through successive generations of teachers, and integrate practical instruction in asana, pranayama, meditation, anatomy, Ayurveda, and yogic philosophy.
-                                Students at YBM adopt a yogic lifestyle, which includes consuming sattvic food, maintaining early morning routines, engaging in meditation by the river, and participating in both practical and reflective learning.
-                                The intended outcome extends beyond certification to encompass personal transformation.
+                                The Sanskrit term Bhāwanā means feeling, contemplation, and devotion — qualities that shape every aspect of learning at YBM. Here, yoga is approached not as performance or posture-focused fitness, but as a conscious inner journey — a path of awareness, refinement, and self-realization.
                             </p>
                         </div>
                     </div>
@@ -50,20 +46,66 @@
                 <div class="row align-items-center">
                     <div class="col-lg-7 col-md-6">
                         <div class="section-header text-left">
-                            <h2>Mission & Vision</h2>
-                            <p>Our Mission</p>
+                            <p>Our Root</p>
+                            <h2>Rooted in the Himalayan Yogic Tradition</h2>
                         </div>
                         <div class="about-text">
                             <p>
-                                The mission is to develop compassionate, knowledgeable, and skilled yoga teachers who exemplify yogic principles in both instruction and daily life, integrating traditional wisdom with contemporary understanding.
+                                YBM follows the timeless Himalayan lineage of yogic study, where learning expands gradually and holistically. Our teacher training and retreat programs blend classical wisdom with structured modern methodology, offering guidance in:
+                            </p>
+                            <p>
+                                •	<b>Asana & Pranayama:</b> body purification and breath mastery
+                            </p>
+                            <p>
+                                •	<b>Meditation & Mantra:</b> cultivating stillness and inner clarity
+                            </p>
+                            <p>
+                                •	<b>Ayurveda & Yogic Anatomy:</b> understanding body, energy, and healing
+                            </p>
+                            <p>
+                                •	<b>Yogic Philosophy & Ethics:</b> integrating ancient teachings into daily life
+                            </p>
+                            <p>
+                                This layered learning approach ensures practitioners don’t just practice yoga — they live yoga.
                             </p>
                         </div>
+                    </div>
+                    <div class="col-lg-5 col-md-6">
+                        <div class="about-img">
+                            <img src="img/about.png" alt="Image">
+                        </div>
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-lg-5 col-md-6">
+                        <div class="about-img">
+                            <img src="img/about.png" alt="Image">
+                        </div>
+                    </div>
+                    <div class="col-lg-7 col-md-6">
                         <div class="section-header text-left">
-                            <p>Our Vision</p>
+                            <p>Yogi</p>
+                            <h2>A Yogic Way of Life</h2>
                         </div>
                         <div class="about-text">
                             <p>
-                                The vision is to establish Yoga Bhawana Mission as a global center for authentic Himalayan yoga education, where traditional knowledge informs both individual and collective well-being.
+                                Life at YBM unfolds with Himalayan rhythm — quiet sunrises, meditation by the river, disciplined practice sessions, and evenings immersed in reflection, chanting, or silent walks. Students follow a sattvic diet, early-morning routines, mindful communication, and deep study, allowing the mind to settle and awareness to expand.
+                            </p>
+                            <p>
+                                The environment nurtures humility, presence, discipline, and inner peace — enabling students to move beyond physical practice and experience the true essence of yoga.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-lg-7 col-md-6">
+                        <div class="section-header text-left">
+                            <p>Enlightenment</p>
+                            <h2>Transformation Beyond Certification</h2>
+                        </div>
+                        <div class="about-text">
+                            <p>
+                                The purpose of Yoga Bhawana Mission is not limited to training yoga teachers — it is to nurture conscious, balanced, compassionate beings. Graduates leave not only with accredited credentials, but with a renewed understanding of themselves, greater clarity of purpose, and the ability to guide others with authenticity and heart.
                             </p>
                         </div>
                     </div>
@@ -75,6 +117,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- Card Start-->
+        <div class="service">
+            <div class="container">
+                <div class="section-header text-center wow zoomIn" data-wow-delay="0.1s">
+                    <p>Yog Bhawna Mission</p>
+                    <h2>Our Mission & Vision</h2>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.0s">
+                        <div class="service-item">
+                            <div class="service-icon">
+                                <i class="flaticon-yoga-pose"></i>
+                            </div>
+                            <h3>Our Mission</h3>
+                            <p>
+                                The mission is to develop compassionate, knowledgeable, and skilled yoga teachers who exemplify yogic principles in both instruction and daily life, integrating traditional wisdom with contemporary understanding.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.2s">
+                        <div class="service-item active">
+                            <div class="service-icon">
+                                <i class="flaticon-workout-1"></i>
+                            </div>
+                            <h3>Our Vision</h3>
+                            <p>
+                                The vision is to establish Yoga Bhawana Mission as a global center for authentic Himalayan yoga education, where traditional knowledge informs both individual and collective well-being.
+                            </p>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Card End -->
+         
         <?php include 'ybm_footer.php' ; ?>
         <a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
 

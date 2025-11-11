@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/yoga_session.php';
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json');
 error_reporting(E_ALL);

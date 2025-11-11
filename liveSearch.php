@@ -2,8 +2,7 @@
 // liveSearch.php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/yoga_session.php';
-include __DIR__ . '/../config.php';
-include __DIR__ . '/../db.php';
+include __DIR__ . '/db.php';
 
 // read q safely
 $q = isset($_GET['q']) ? trim($_GET['q']) : '';

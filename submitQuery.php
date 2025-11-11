@@ -7,8 +7,7 @@ try {
         exit;
     }
 
-    include __DIR__ . '/../config.php';
-    include __DIR__ . '/../db.php';
+    include __DIR__ . '/db.php';
 
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');

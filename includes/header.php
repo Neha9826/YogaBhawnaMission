@@ -1,6 +1,5 @@
 <?php
 // Make sure BASE_URL is available
-include_once __DIR__ . '/../config.php';
 
 // Fetch contact info
 if (isset($conn) && !$conn->connect_error) {

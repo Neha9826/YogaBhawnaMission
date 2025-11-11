@@ -2,7 +2,6 @@
 // packageDetails.php - robust, schema-aware, complete page
 
 require_once __DIR__ . '/yoga_session.php';
-require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php'; // provides $conn (mysqli)
 
 // small helper (safe output)

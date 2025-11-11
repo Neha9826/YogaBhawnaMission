@@ -1,6 +1,6 @@
 <?php
 // /yoga/register_instructor.php
-include '../admin/db.php';
+include 'db.php';
 session_start();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <html>
 <head>
     <title>Register as Instructor</title>
-    <link href="../admin/css/styles.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-5">

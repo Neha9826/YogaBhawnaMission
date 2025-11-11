@@ -77,18 +77,9 @@ if (empty($gallery)) {
 }
 
 /*
-  3) Daily schedule - yoga_package_schedule (if exists)
+  3) Daily schedule - REMOVED, REPLACED BY 'program' IN SECTION 1
 */
-$schedule = [];
-if ($conn->query("SHOW TABLES LIKE 'yoga_package_schedule'")->num_rows) {
-    if ($sstmt = $conn->prepare("SELECT id, time, activity FROM yoga_package_schedule WHERE package_id = ? ORDER BY time ASC, id ASC")) {
-        $sstmt->bind_param('i', $packageId);
-        $sstmt->execute();
-        $sres = $sstmt->get_result();
-        while ($r = $sres->fetch_assoc()) $schedule[] = $r;
-        $sstmt->close();
-    }
-}
+// $schedule = []; ... (This section has been removed)
 
 /*
   4) Skill levels - yoga_retreat_levels (may contain enum 'Beginner','Intermediate','Advanced','All')
@@ -231,13 +222,15 @@ function getImagePath($img) {
 }
 
 // Prepare gallery images for the grid
-$galleryGrid = array_slice($gallery, 0, 5);
 $galleryAll = $gallery; // for modal
+$galleryGrid = array_slice($galleryAll, 0, 5); // Get up to 5 real images
+$galleryCount = count($galleryGrid); // This is the key variable
 
-// Fill grid with placeholders if less than 5 images
+// Fill grid with ONE placeholder if NO images exist
 $placeholderImg = 'https://via.placeholder.com/600x400.png?text=Yoga+Retreat';
-while (count($galleryGrid) < 5) {
+if ($galleryCount === 0) {
     $galleryGrid[] = ['image_path' => $placeholderImg, 'alt_text' => 'Placeholder'];
+    $galleryCount = 1; // We will use the 1-image layout
 }
 
 ?>
@@ -286,11 +279,9 @@ while (count($galleryGrid) < 5) {
     /* Remove the old hero */
     .hero { display: none; }
 
-    /* --- New Gallery Grid --- */
+    /* --- New Gallery Grid (Dynamic) --- */
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(2, 1fr);
       gap: 8px;
       height: 450px; /* Adjust height as needed */
       max-width: 1200px;
@@ -306,14 +297,54 @@ while (count($galleryGrid) < 5) {
       cursor: pointer;
       position: relative;
     }
-    .gallery-item:first-child {
-      grid-column: 1 / 3;
-      grid-row: 1 / 3;
+    
+    /* 1 Image Layout */
+    .gallery-grid.gallery-count-1 {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
     }
-    .gallery-item:nth-child(2) { grid-column: 3 / 4; grid-row: 1 / 2; }
-    .gallery-item:nth-child(3) { grid-column: 4 / 5; grid-row: 1 / 2; }
-    .gallery-item:nth-child(4) { grid-column: 3 / 4; grid-row: 2 / 3; }
-    .gallery-item:nth-child(5) { grid-column: 4 / 5; grid-row: 2 / 3; }
+    .gallery-grid.gallery-count-1 .gallery-item:first-child {
+      grid-column: 1 / 2;
+      grid-row: 1 / 2;
+    }
+
+    /* 2 Image Layout */
+    .gallery-grid.gallery-count-2 {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: 1fr;
+    }
+    .gallery-grid.gallery-count-2 .gallery-item:first-child { grid-column: 1 / 2; grid-row: 1 / 2; }
+    .gallery-grid.gallery-count-2 .gallery-item:nth-child(2) { grid-column: 2 / 3; grid-row: 1 / 2; }
+
+    /* 3 Image Layout */
+    .gallery-grid.gallery-count-3 {
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+    .gallery-grid.gallery-count-3 .gallery-item:first-child { grid-column: 1 / 3; grid-row: 1 / 3; }
+    .gallery-grid.gallery-count-3 .gallery-item:nth-child(2) { grid-column: 3 / 5; grid-row: 1 / 2; }
+    .gallery-grid.gallery-count-3 .gallery-item:nth-child(3) { grid-column: 3 / 5; grid-row: 2 / 3; }
+
+    /* 4 Image Layout */
+    .gallery-grid.gallery-count-4 {
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+    .gallery-grid.gallery-count-4 .gallery-item:first-child { grid-column: 1 / 3; grid-row: 1 / 3; }
+    .gallery-grid.gallery-count-4 .gallery-item:nth-child(2) { grid-column: 3 / 4; grid-row: 1 / 2; }
+    .gallery-grid.gallery-count-4 .gallery-item:nth-child(3) { grid-column: 4 / 5; grid-row: 1 / 2; }
+    .gallery-grid.gallery-count-4 .gallery-item:nth-child(4) { grid-column: 3 / 5; grid-row: 2 / 3; }
+
+    /* 5 Image Layout (Original) */
+    .gallery-grid.gallery-count-5 {
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+    .gallery-grid.gallery-count-5 .gallery-item:first-child { grid-column: 1 / 3; grid-row: 1 / 3; }
+    .gallery-grid.gallery-count-5 .gallery-item:nth-child(2) { grid-column: 3 / 4; grid-row: 1 / 2; }
+    .gallery-grid.gallery-count-5 .gallery-item:nth-child(3) { grid-column: 4 / 5; grid-row: 1 / 2; }
+    .gallery-grid.gallery-count-5 .gallery-item:nth-child(4) { grid-column: 3 / 4; grid-row: 2 / 3; }
+    .gallery-grid.gallery-count-5 .gallery-item:nth-child(5) { grid-column: 4 / 5; grid-row: 2 / 3; }
     
     .gallery-item .view-all-btn {
       position: absolute;
@@ -327,6 +358,7 @@ while (count($galleryGrid) < 5) {
     @media (max-width: 767px) {
       .gallery-grid {
         height: 300px;
+        /* Force 1-column layout on mobile regardless of count */
         grid-template-columns: 1fr;
         grid-template-rows: 1fr;
       }
@@ -616,16 +648,25 @@ while (count($galleryGrid) < 5) {
 <?php include __DIR__ . '/ybm_navbar.php'; ?>
 
 
-<div class="gallery-grid">
-  <div class="gallery-item" style="background-image: url('<?= esc(getImagePath($galleryGrid[0])) ?>');" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="0"></div>
-  <div class="gallery-item" style="background-image: url('<?= esc(getImagePath($galleryGrid[1])) ?>');" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="1"></div>
-  <div class="gallery-item" style="background-image: url('<?= esc(getImagePath($galleryGrid[2])) ?>');" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="2"></div>
-  <div class="gallery-item" style="background-image: url('<?= esc(getImagePath($galleryGrid[3])) ?>');" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="3"></div>
-  <div class="gallery-item" style="background-image: url('<?= esc(getImagePath($galleryGrid[4])) ?>');" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="4">
-    <button class="btn btn-sm view-all-btn" data-bs-toggle="modal" data-bs-target="#galleryModal">
-      <i class="bi bi-images me-1"></i> View all
-    </button>
-  </div>
+<div class="gallery-grid gallery-count-<?= $galleryCount ?>">
+  <?php foreach ($galleryGrid as $index => $img): ?>
+    <div class="gallery-item"
+         style="background-image: url('<?= esc(getImagePath($img)) ?>');"
+         data-bs-toggle="modal"
+         data-bs-target="#galleryModal"
+         data-bs-slide-to="<?= $index ?>">
+      
+      <?php 
+      // Show "View all" button on the last grid item
+      // if there is more than 1 image in the full gallery
+      if ($index === $galleryCount - 1 && count($galleryAll) > 1): ?>
+        <button class="btn btn-sm view-all-btn" data-bs-toggle="modal" data-bs-target="#galleryModal">
+          <i class="bi bi-images me-1"></i> View all
+        </button>
+      <?php endif; ?>
+      
+    </div>
+  <?php endforeach; ?>
 </div>
 
 <main class="py-4">
@@ -711,18 +752,25 @@ while (count($galleryGrid) < 5) {
         </section>
 
         <section class="content-section">
-          <h2 class="section-title">Typical daily schedule</h2>
-          <?php if (!empty($schedule)): ?>
-            <ul class="list-unstyled">
-              <?php foreach ($schedule as $s): ?>
-                <li class="mb-2 pb-2 border-bottom">
-                  <strong><?= esc(date('h:i A', strtotime($s['time']))) ?></strong>
-                  <p class="mb-0 ms-2"><?= esc($s['activity']) ?></p>
-                </li>
-              <?php endforeach; ?>
-            </ul>
+          <h2 class="section-title">Accomodation</h2>
+            <div class="program-content">
+              <p> <b>Check-in Time:</b>
+                  2:00 PM <br>
+                  <b>Check-out Time:</b>
+                  11:00 AM <br>
+                  <p class="text-muted">SunArt Center offers rooms with wooden furnishings and wall panels. Most rooms have a private balcony where guests can sit and enjoy views of the sea. The private bathrooms provide a shower and bath toiletries.</p>
+              </p>
+            </div>
+        </section>
+
+        <section class="content-section">
+          <h2 class="section-title">Program</h2>
+          <?php if (!empty($pkg['program'])): ?>
+            <div class="program-content">
+              <?= $pkg['program'] ?>
+            </div>
           <?php else: ?>
-            <p class="text-muted">No daily schedule available for this package.</p>
+            <p class="text-muted">No program details available for this package.</p>
           <?php endif; ?>
         </section>
 
@@ -908,12 +956,7 @@ while (count($galleryGrid) < 5) {
               </div>
             </div>
             
-            <!-- <div class="booking-btn-group">
-                <button type="button" class="btn btn-brand-primary" id="requestBookBtn">Request to book</button>
-                <button type="button" class="btn btn-brand-outline" id="sendQueryBtn">Send Inquiry</button>
-            </div> -->
-            
-          </div>
+            </div>
 
           <div class="booking-box-footer">
             <div class="booking-btn-group">
