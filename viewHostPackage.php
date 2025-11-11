@@ -21,9 +21,9 @@ $res = $conn->query($sql);
 $package = $res->fetch_assoc();
 if(!$package) die("Package not found");
 
-// ✅ Fetch daily schedule
-$schedRes = $conn->query("SELECT time, activity FROM yoga_package_schedule WHERE package_id=$id ORDER BY time ASC");
-$schedules = $schedRes ? $schedRes->fetch_all(MYSQLI_ASSOC) : [];
+// ✅ Fetch extra sections
+$extraSecRes = $conn->query("SELECT title, description FROM yoga_package_extra_sections WHERE package_id=$id ORDER BY sort_order ASC");
+$extra_sections = $extraSecRes ? $extraSecRes->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,6 +50,27 @@ $schedules = $schedRes ? $schedRes->fetch_all(MYSQLI_ASSOC) : [];
       font-style: italic;
       margin-top: 8px;
     }
+
+    /* --- ADD THIS --- */
+    .rich-content-display {
+      border: 1px solid #eee;
+      padding: 1rem;
+      border-radius: 4px;
+      background: #fdfdfd;
+      margin-bottom: 1rem;
+    }
+    .rich-content-display h1,
+    .rich-content-display h2,
+    .rich-content-display h3 {
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .rich-content-display ul,
+    .rich-content-display ol {
+      padding-left: 2rem;
+    }
+    /* --- END ADD --- */
+    }
   </style>
 </head>
 <body class="yoga-page">
@@ -72,27 +93,49 @@ $schedules = $schedRes ? $schedRes->fetch_all(MYSQLI_ASSOC) : [];
       <p><strong>Created:</strong> <?= htmlspecialchars($package['created_at']) ?></p>
       <p><strong>Last Updated:</strong> <?= htmlspecialchars($package['updated_at']) ?></p>
 
-      <!-- ✅ Daily Schedule Section -->
-      <h4 class="mt-4">Daily Schedule</h4>
-      <?php if (!empty($schedules)): ?>
-        <table class="schedule-table">
-          <thead>
-            <tr>
-              <th style="width:150px;">Time</th>
-              <th>Activity</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach($schedules as $s): ?>
-              <tr>
-                <td><?= htmlspecialchars(date('h:i A', strtotime($s['time']))) ?></td>
-                <td><?= htmlspecialchars($s['activity']) ?></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+      <h4 class="mt-4">Program</h4>
+      <?php if (!empty($package['program'])): ?>
+        <div class="rich-content-display">
+          <?= $package['program'] // Outputting raw HTML from editor ?>
+        </div>
       <?php else: ?>
-        <p class="schedule-empty">No daily schedule added for this package.</p>
+        <p class="schedule-empty">No Program details added.</p>
+      <?php endif; ?>
+
+      <h4 class="mt-4">What's Included</h4>
+      <?php if (!empty($package['whats_included'])): ?>
+        <div class="rich-content-display">
+          <?= $package['whats_included'] // Outputting raw HTML from editor ?>
+        </div>
+      <?php else: ?>
+        <p class="schedule-empty">No details added.</p>
+      <?php endif; ?>
+
+      <h4 class="mt-4">What's Excluded</h4>
+      <?php if (!empty($package['whats_excluded'])): ?>
+        <div class="rich-content-display">
+          <?= $package['whats_excluded'] // Outputting raw HTML from editor ?>
+        </div>
+      <?php else: ?>
+        <p class="schedule-empty">No details added.</p>
+      <?php endif; ?>
+
+      <h4 class="mt-4">Cancellation Policy</h4>
+      <?php if (!empty($package['cancellation_policy'])): ?>
+        <div class="rich-content-display">
+          <?= $package['cancellation_policy'] // Outputting raw HTML from editor ?>
+        </div>
+      <?php else: ?>
+        <p class="schedule-empty">No policy added.</p>
+      <?php endif; ?>
+
+      <?php if (!empty($extra_sections)): ?>
+        <?php foreach($extra_sections as $section): ?>
+          <h4 class="mt-4"><?= htmlspecialchars($section['title']) ?></h4>
+          <div class="rich-content-display">
+            <?= $section['description'] // Outputting raw HTML from editor ?>
+          </div>
+        <?php endforeach; ?>
       <?php endif; ?>
 
       <div class="mt-4">

@@ -16,6 +16,14 @@ if ($packageId <= 0) {
     exit;
 }
 
+// Increment view count
+$updateViewSql = "UPDATE yoga_packages SET view_count = view_count + 1 WHERE id = ?";
+if ($viewStmt = $conn->prepare($updateViewSql)) {
+    $viewStmt->bind_param('i', $packageId);
+    $viewStmt->execute();
+    $viewStmt->close();
+}
+
 /*
   1) Fetch package + retreat + organization information
      (ensuring both package and retreat are published).
@@ -74,6 +82,18 @@ if (empty($gallery)) {
             $mstmt->close();
         }
     }
+
+    // --- ADD THIS SNIPPET ---
+$extra_sections = [];
+if ($es_stmt = $conn->prepare("SELECT id, title, description FROM yoga_package_extra_sections WHERE package_id = ? ORDER BY sort_order ASC, id ASC")) {
+    $es_stmt->bind_param('i', $packageId);
+    $es_stmt->execute();
+    $es_res = $es_stmt->get_result();
+    while ($r = $es_res->fetch_assoc()) $extra_sections[] = $r;
+    $es_stmt->close();
+}
+// --- END SNIPPET ---
+
 }
 
 /*
@@ -148,7 +168,8 @@ if ($conn->query("SHOW TABLES LIKE 'yoga_retreat_instructors'")->num_rows && $co
 */
 $videos = [];
 if ($conn->query("SHOW TABLES LIKE 'yoga_retreat_media'")->num_rows) {
-    if ($mv = $conn->prepare("SELECT id, media_path, type FROM yoga_retreat_media WHERE retreat_id = ? AND type = 'video' ORDER BY id ASC")) {
+  // if ($mv = $conn->prepare("SELECT id, media_path, type FROM yoga_retreat_media WHERE retreat_id = ? AND (type = 'video' OR type = 'video_file') ORDER BY id ASC")) {
+    if ($mv = $conn->prepare("SELECT id, media_path, type FROM yoga_retreat_media WHERE retreat_id = ? ORDER BY id ASC")) {
         $mv->bind_param('i', $retreatId);
         $mv->execute();
         $mres = $mv->get_result();
@@ -227,10 +248,26 @@ $galleryGrid = array_slice($galleryAll, 0, 5); // Get up to 5 real images
 $galleryCount = count($galleryGrid); // This is the key variable
 
 // Fill grid with ONE placeholder if NO images exist
+// --- Gallery Grid (Video + Images) ---
 $placeholderImg = 'https://via.placeholder.com/600x400.png?text=Yoga+Retreat';
-if ($galleryCount === 0) {
+$first_video = $videos[0] ?? null; // Get the first video, if it exists
+$galleryAll = array_merge($videos, $gallery); // For the "View All" modal (videos first)
+$totalMedia = count($galleryAll);
+
+if ($first_video) {
+    // If we have a video, the grid will be 1 video + 4 images
+    $galleryGrid = array_slice($gallery, 0, 4); // Get the first 4 IMAGES
+    $gridCount = 5; // 1 video + 4 images (total)
+} else {
+    // No video, so the grid is just the first 5 images
+    $galleryGrid = array_slice($gallery, 0, 5); // Get up to 5 IMAGES
+    $gridCount = count($galleryGrid);
+}
+
+// Handle edge case where there is nothing at all
+if ($gridCount === 0 && !$first_video) {
     $galleryGrid[] = ['image_path' => $placeholderImg, 'alt_text' => 'Placeholder'];
-    $galleryCount = 1; // We will use the 1-image layout
+    $gridCount = 1;
 }
 
 ?>
@@ -296,6 +333,20 @@ if ($galleryCount === 0) {
       overflow: hidden;
       cursor: pointer;
       position: relative;
+    }
+
+    .gallery-item.video-item {
+        background: #000;
+        position: relative;
+    }
+    .gallery-item video,
+    .gallery-item iframe {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
     }
     
     /* 1 Image Layout */
@@ -468,7 +519,7 @@ if ($galleryCount === 0) {
     
     /* --- Sticky Booking Box --- */
     .booking-box-sticky {
-      position: sticky;
+      /* position: sticky; */
       top: 20px;
       background-color: #fff;
       border: 1px solid var(--border-color);
@@ -479,6 +530,7 @@ if ($galleryCount === 0) {
       padding: 1rem 1.25rem;
       border-bottom: 1px solid var(--border-color);
     }
+
     .booking-box-header .price-from {
       font-size: 0.9rem;
       color: var(--text-muted);
@@ -566,13 +618,24 @@ if ($galleryCount === 0) {
     }
 
     /* --- ADD THIS ENTIRE NEW RULE --- */
+    .booking-box-sticky {
+      position: sticky;
+      top: 20px;
+    }
     .booking-box-footer {
-      padding: 1.25rem;
+      position: sticky;
+      bottom: 0; /* The point where it will "stick" */
+      padding: 1rem;
       border-top: 1px solid var(--border-color);
       background-color: #fff; /* Ensures it's opaque */
       margin-top: auto; /* Pushes it to the bottom */
-      border-bottom-left-radius: 8px; /* Match parent card */
-      border-bottom-right-radius: 8px; /* Match parent card */
+      /* border-bottom-left-radius: 8px; /* Match parent card */
+      /* border-bottom-right-radius: 8px; /* Match parent card */
+      border-radius: 8px;
+      width: 350px;
+      align-self: flex-end;
+      /* box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); */
+      margin-left: auto;
     }
 
     .booking-btn-group .btn {
@@ -606,25 +669,24 @@ if ($galleryCount === 0) {
     .fixed-booking-buttons { display: none; }
     
     /* Responsive Booking Box (becomes static on mobile) */
+    /* --- REPLACE YOUR ENTIRE @media BLOCK WITH THIS --- */
+    
     @media (max-width: 991.98px) {
+      /* 1. Make the desktop sidebar become a static block */
       .booking-box-sticky {
         position: static;
         top: auto;
         margin-top: 1.5rem;
-        max-height: none; /* <-- ADD THIS */
-        display: block; /* <-- ADD THIS */
       }
 
-      .booking-box-footer { /* <-- MODIFY THIS (was .booking-box-sticky .booking-btn-group) */
+      /* 2. Hide the desktop buttons (which are inside the sidebar) */
+      .booking-box-sticky .booking-btn-group {
         display: none; 
       }
       
-      .booking-box-body { /* <-- ADD THIS to reset scrolling */
-          overflow-y: visible;
-      }
-      /* Show the mobile-only buttons as a fallback */
+      /* 3. Show the mobile-only fixed-bottom buttons */
       .fixed-booking-buttons {
-        display: block;
+        display: block; /* This overrides the 'd-lg-none' */
         position: fixed;
         bottom: 0;
         left: 0;
@@ -634,13 +696,92 @@ if ($galleryCount === 0) {
         border-top: 1px solid var(--border-color);
         z-index: 1000;
       }
-      .booking-box-sticky .booking-btn-group {
-        display: none; /* Hide sidebar buttons on mobile */
-      }
+      
+      /* 4. Add padding to the bottom of the page */
       body {
         padding-bottom: 70px; /* Space for fixed buttons */
       }
     }
+    /* --- END OF REPLACEMENT --- */
+
+    /* ===========================
+   RESPONSIVE FIXES – packageDetails
+   Focus: Header Gallery & CTA Buttons
+   =========================== */
+
+/* ----- Gallery grid responsiveness ----- */
+@media (max-width: 1199px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .gallery-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .gallery-grid img,
+  .gallery-grid video {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+  }
+}
+
+/* Center gallery inside container for small screens */
+@media (max-width: 575px) {
+  .gallery-grid {
+    margin: 0 auto;
+    max-width: 95%;
+  }
+}
+
+
+/* ----- “Request to Book” + “Send Inquiry” Buttons ----- */
+@media (max-width: 991px) {
+  .booking-cta-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    position: static !important;
+    width: 100% !important;
+    margin-top: 15px !important;
+  }
+  .booking-cta-buttons .btn {
+    width: 100% !important;
+    font-size: 1rem !important;
+    padding: 12px !important;
+  }
+}
+
+/* For smaller mobiles, fix button text wrapping and stacking */
+@media (max-width: 575px) {
+  .booking-cta-buttons .btn {
+    font-size: 0.9rem !important;
+    padding: 10px !important;
+  }
+  .booking-cta-buttons {
+    margin-top: 20px !important;
+  }
+}
+
+/* ----- Optional tweak for sticky button behavior ----- */
+@media (max-width: 480px) {
+  .booking-cta-buttons {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #fff !important;
+    padding: 10px !important;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 999;
+  }
+}
+
   </style>
 </head>
 <body class="yoga-page">
@@ -648,25 +789,61 @@ if ($galleryCount === 0) {
 <?php include __DIR__ . '/ybm_navbar.php'; ?>
 
 
-<div class="gallery-grid gallery-count-<?= $galleryCount ?>">
-  <?php foreach ($galleryGrid as $index => $img): ?>
-    <div class="gallery-item"
-         style="background-image: url('<?= esc(getImagePath($img)) ?>');"
-         data-bs-toggle="modal"
-         data-bs-target="#galleryModal"
-         data-bs-slide-to="<?= $index ?>">
-      
-      <?php 
-      // Show "View all" button on the last grid item
-      // if there is more than 1 image in the full gallery
-      if ($index === $galleryCount - 1 && count($galleryAll) > 1): ?>
-        <button class="btn btn-sm view-all-btn" data-bs-toggle="modal" data-bs-target="#galleryModal">
-          <i class="bi bi-images me-1"></i> View all
-        </button>
-      <?php endif; ?>
-      
-    </div>
-  <?php endforeach; ?>
+<div class="gallery-grid gallery-count-<?= $gridCount ?>">
+    
+    <?php 
+    $modal_index = 0; // Start modal index at 0
+    
+    // --- RENDER VIDEO FIRST, IF IT EXISTS ---
+    if ($first_video): 
+        $vid = $first_video;
+        
+        // ✅ FIX: Check type OR path, to be safe
+        $is_file = ($vid['type'] == 'video_file' || str_starts_with($vid['media_path'], 'uploads/'));
+    ?>
+        <div class="gallery-item video-item" data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="<?= $modal_index ?>">
+            <?php if ($is_file): ?>
+                <video playsinline muted loop controls preload="metadata">
+                    <source src="<?= esc(getImagePath($vid['media_path'])) ?>">
+                </video>
+            <?php else: // Embed YouTube/Vimeo Link
+                $embed_url = '';
+                if (preg_match('/(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/', $vid['media_path'], $matches)) {
+                    $embed_url = 'https://www.youtube.com/embed/' . $matches[2] . '?autoplay=1&mute=1&loop=1&playlist=' . $matches[2];
+                } elseif (preg_match('/vimeo\.com\/([0-9]+)/', $vid['media_path'], $matches)) {
+                    $embed_url = 'https://player.vimeo.com/video/' . $matches[1] . '?autoplay=1&muted=1&loop=1&background=1';
+                }
+            ?>
+                <?php if ($embed_url): ?>
+                    <iframe src="<?= $embed_url ?>" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                <?php else: ?>
+                    <div class="p-3 text-white">Video format not supported for grid preview.</div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    <?php 
+        $modal_index++; // Increment modal index
+    endif; 
+
+    // --- RENDER IMAGES ---
+    foreach ($galleryGrid as $img): 
+        $isLastGridItem = ($modal_index == $gridCount - 1);
+        $showViewAll = $isLastGridItem && ($totalMedia > $gridCount);
+    ?>
+        <div class="gallery-item <?= $showViewAll ? 'has-view-all-btn' : '' ?>" 
+             style="background-image: url('<?= esc(getImagePath($img)) ?>');" 
+             data-bs-toggle="modal" data-bs-target="#galleryModal" data-bs-slide-to="<?= $modal_index ?>">
+            
+            <?php if ($showViewAll): ?>
+                <button class="btn btn-sm view-all-btn" data-bs-toggle="modal" data-bs-target="#galleryModal">
+                    <i class="bi bi-images me-1"></i> View all (<?= $totalMedia ?>)
+                </button>
+            <?php endif; ?>
+        </div>
+    <?php 
+        $modal_index++; // Increment modal index
+    endforeach; 
+    ?>
 </div>
 
 <main class="py-4">
@@ -718,8 +895,21 @@ if ($galleryCount === 0) {
           <p><?= nl2br(esc($pkg['retreat_full'] ?: 'Program details will be updated.')) ?></p>
         </section>
 
+        <section class="content-section" id="highlights_overview">
+            <h2 class="section-title">Retreat Highlights</h2>
+            <div class="rich-content">
+                <?php 
+                    if (!empty($pkg['highlights'])) {
+                        echo $pkg['highlights']; // Outputting raw HTML
+                    } else {
+                        echo "<p class='text-muted'>No highlights have been added for this package.</p>";
+                    }
+                ?>
+            </div>
+          </section>
+
         <section class="content-section">
-          <h2 class="section-title">Highlights</h2>
+          <h2 class="section-title">Facilities</h2>
           <?php if (!empty($amenities)): ?>
             <ul class="highlight-list">
               <?php foreach ($amenities as $am): ?>
@@ -730,7 +920,7 @@ if ($galleryCount === 0) {
               <?php endforeach; ?>
             </ul>
           <?php else: ?>
-            <p class="text-muted">No highlights listed yet.</p>
+            <p class="text-muted">No facilities listed yet.</p>
           <?php endif; ?>
         </section>
         
@@ -751,17 +941,22 @@ if ($galleryCount === 0) {
             </div>
         </section>
 
-        <section class="content-section">
-          <h2 class="section-title">Accomodation</h2>
-            <div class="program-content">
-              <p> <b>Check-in Time:</b>
-                  2:00 PM <br>
-                  <b>Check-out Time:</b>
-                  11:00 AM <br>
-                  <p class="text-muted">SunArt Center offers rooms with wooden furnishings and wall panels. Most rooms have a private balcony where guests can sit and enjoy views of the sea. The private bathrooms provide a shower and bath toiletries.</p>
+        <section class="content-section" id="accommodation">
+            <h2 class="section-title">Accommodation Overview</h2>
+            <div class="rich-content"> 
+              <p class="text-muted">
+              <?php 
+                  if (!empty($pkg['accommodation_overview'])) {
+                      // Outputting raw HTML from editor
+                      echo $pkg['accommodation_overview']; 
+                  } else {
+                      // Default text from user's prompt
+                      echo '<p class="text-muted">SunArt Center offers rooms with wooden furnishings and wall panels. Most rooms have a private balcony where guests can sit and enjoy views of the sea. The private bathrooms provide a shower and bath toiletries.</p>';
+                  }
+              ?>
               </p>
             </div>
-        </section>
+          </section>
 
         <section class="content-section">
           <h2 class="section-title">Program</h2>
@@ -773,6 +968,58 @@ if ($galleryCount === 0) {
             <p class="text-muted">No program details available for this package.</p>
           <?php endif; ?>
         </section>
+
+        <section class="content-section" id="included">
+            <h2 class="section-title">What's Included</h2>
+            <div class="rich-content">
+                <?php 
+                    if (!empty($pkg['whats_included'])) {
+                        echo $pkg['whats_included']; 
+                    } else {
+                        echo "<p class='text-muted'>No details provided for what's included.</p>";
+                    }
+                ?>
+            </div>
+          </section>
+
+          <section class="content-section" id="excluded">
+            <h2 class="section-title">What's Excluded</h2>
+            <div class="rich-content">
+                <?php 
+                    if (!empty($pkg['whats_excluded'])) {
+                        echo $pkg['whats_excluded']; 
+                    } else {
+                        echo "<p class='text-muted'>No details provided for what's excluded.</p>";
+                    }
+                ?>
+            </div>
+          </section>
+
+          <section class="content-section" id="cancellation_policy">
+            <h2 class="section-title">Cancellation Policy</h2>
+            <div class="rich-content">
+                <?php 
+                    if (!empty($pkg['cancellation_policy'])) {
+                        echo $pkg['cancellation_policy']; 
+                    } else {
+                        echo "<p class='text-muted'>No cancellation policy has been specified.</p>";
+                    }
+                ?>
+            </div>
+          </section>
+
+          <?php if (!empty($extra_sections)): ?>
+            <?php foreach($extra_sections as $section): ?>
+              <section class="content-section">
+                <h2 class="section-title"><?= esc($section['title']) ?></h2>
+                <div class="rich-content">
+                  <?= $section['description'] // Outputting raw HTML ?>
+                </div>
+              </section>
+            <?php endforeach; ?>
+          <?php endif; ?>
+
+          <section class="content-section">
 
         <section class="content-section">
           <h2 class="section-title">Meet the Instructors</h2>
@@ -909,7 +1156,7 @@ if ($galleryCount === 0) {
 
             <div class="mb-3">
               <label for="check_in" class="form-label">Arrival date</label>
-              <input type="date" id="check_in" class="form-control">
+              <input type="date" id="check_in" class="form-control" readonly>
             </div>
             <div class="mb-3">
               <label for="check_out" class="form-label">Checkout date</label>
@@ -957,25 +1204,17 @@ if ($galleryCount === 0) {
             </div>
             
             </div>
-
+        </div>
+      </div> 
           <div class="booking-box-footer">
             <div class="booking-btn-group">
-                <button type="button" class="btn btn-brand-primary" id="requestBookBtn">Request to book</button>
-                <button type="button" class="btn btn-brand-outline" id="sendQueryBtn">Send Inquiry</button>
+                <button type="button" class="btn btn-brand-primary btn-sm" id="requestBookBtn">Request to book</button>
+                <button type="button" class="btn btn-brand-outline btn-sm" id="sendQueryBtn">Send Inquiry</button>
             </div>
           </div>
-          
-        </div>
-      </div> </div>
+    </div>
   </div>
 </main>
-
-<div class="fixed-booking-buttons d-lg-none">
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-brand-outline flex-fill" id="sendQueryBtnMobile">Send Inquiry</button>
-        <button type="button" class="btn btn-brand-primary flex-fill" id="requestBookBtnMobile">Request to book</button>
-    </div>
-</div>
 
 <div class="modal fade" id="galleryModal" tabindex="-1" aria-labelledby="galleryModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -986,19 +1225,57 @@ if ($galleryCount === 0) {
       </div>
       <div class="modal-body p-0">
         <div id="galleryCarousel" class="carousel slide" data-bs-ride="carousel">
+
+        
           <div class="carousel-inner">
             <?php if (empty($galleryAll)): ?>
               <div class="carousel-item active">
                 <img src="<?= $placeholderImg ?>" class="d-block w-100" alt="Placeholder">
               </div>
             <?php else: ?>
-              <?php foreach ($galleryAll as $i => $img): ?>
+              <?php foreach ($galleryAll as $i => $media): ?>
                 <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
-                  <img src="<?= esc(getImagePath($img)) ?>" class="d-block w-100" style="max-height: 80vh; object-fit: contain;" alt="<?= esc(is_array($img) ? $img['alt_text'] : '') ?>">
+                  
+                  <?php 
+                  // ✅ FIX: Check type OR path, to be safe
+                  $is_video = (isset($media['type']) && ($media['type'] == 'video' || $media['type'] == 'video_file')) || str_starts_with($media['media_path'], 'uploads/retreats/videos/');
+                  $is_file = (isset($media['type']) && $media['type'] == 'video_file') || str_starts_with($media['media_path'], 'uploads/retreats/videos/');
+                  
+                  if ($is_video): 
+                      $vid = $media;
+                  ?>
+                      <div class="d-flex justify-content-center align-items-center bg-dark" style="height: 90vh;">
+                      <?php if ($is_file): ?>
+                          <video class="d-block" style="max-width: 100%; max-height: 90vh;" controls>
+                              <source src="<?= esc(getImagePath($vid['media_path'])) ?>">
+                          </video>
+                      <?php else: // It's a URL Link
+                          $embed_url = '';
+                          if (preg_match('/(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/', $vid['media_path'], $matches)) {
+                              $embed_url = 'https://www.youtube.com/embed/' . $matches[2];
+                          } elseif (preg_match('/vimeo\.com\/([0-9]+)/', $vid['media_path'], $matches)) {
+                              $embed_url = 'https://player.vimeo.com/video/' . $matches[1];
+                          }
+                      ?>
+                          <?php if($embed_url): ?>
+                              <iframe src="<?= $embed_url ?>" style="width: 100%; height: 90vh; border:0;" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                          <?php else: ?>
+                              <p class="text-white">Video link is invalid.</p>
+                          <?php endif; ?>
+                      <?php endif; ?>
+                      </div>
+
+                  <?php else: // It's an image
+                      $img = $media;
+                  ?>
+                      <img src="<?= esc(getImagePath($img)) ?>" class="d-block w-100" alt="<?= esc($img['alt_text'] ?? 'Gallery image') ?>" style="max-height: 90vh; object-fit: contain;">
+                  <?php endif; ?>
+
                 </div>
               <?php endforeach; ?>
             <?php endif; ?>
           </div>
+
           <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>

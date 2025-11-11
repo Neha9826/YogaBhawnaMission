@@ -133,13 +133,43 @@ if ($check_result->num_rows > 0) {
             }
         }
     }
- 
 
+    // --- ADD THIS NEW SNIPPET ---
+    // --- Save uploaded videos ---
+    if (!empty($_FILES['video_files']['name'][0])) {
+        // Create a separate directory for video files
+        $video_upload_dir_rel = 'uploads/retreats/videos/';
+        $video_upload_dir_abs = __DIR__ . '/' . $video_upload_dir_rel;
+
+        if (!is_dir($video_upload_dir_abs)) {
+            mkdir($video_upload_dir_abs, 0755, true);
+        }
+
+        foreach ($_FILES['video_files']['tmp_name'] as $key => $tmp_name) {
+            if (!isset($_FILES['video_files']['error'][$key]) || $_FILES['video_files']['error'][$key] !== UPLOAD_ERR_OK) {
+                // Skip files with errors
+                continue;
+            }
+
+            $original_name = $_FILES['video_files']['name'][$key];
+            $safe_name = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($original_name));
+            $file_name = time() . '_' . mt_rand(1000, 9999) . '_' . $safe_name;
+            $target_abs = $video_upload_dir_abs . $file_name;
+            $db_path = $video_upload_dir_rel . $file_name;
+
+            // Move the uploaded file
+            if (move_uploaded_file($tmp_name, $target_abs)) {
+                // Insert into the media table, using 'video_file' to distinguish from a URL
+                $conn->query("INSERT INTO yoga_retreat_media (retreat_id, type, media_path) 
+                    VALUES ($retreat_id, 'video_file', '".$conn->real_escape_string($db_path)."')");
+            }
+        }
+    }
+    // --- End Save uploaded videos ---
+    // --- END SNIPPET ---
 }
 $check_stmt->close();
-
     // --- End Save videos ---
-
     $success = "Retreat created successfully!";
 }
 ?>
@@ -151,7 +181,6 @@ $check_stmt->close();
     <link rel="stylesheet" href="yoga.css">
 </head>
 <body class="yoga-page">
-
 <?php include __DIR__ . '/includes/fixed_social_bar.php'; ?>
 <?php include __DIR__ . '/yoga_navbar.php'; ?>
 
@@ -272,6 +301,14 @@ $check_stmt->close();
           <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="addVideo()">Add More</button>
         </div>
 
+        <div class="col-md-5">
+          <label class="form-label">Upload Videos (Files)</label>
+          <input type="file" name="video_files[]" class="form-control mb-2" accept="video/mp4,video/webm,video/ogg">
+          <div id="video-file-container"></div>
+          <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="addVideoFile()">Add More Video Files</button>
+        </div>
+        <div class="col-md-12">
+
         <!-- Submit -->
         <div class="col-md-12">
           <button type="submit" class="btn btn-primary">Create Retreat</button>
@@ -309,6 +346,19 @@ function addVideo() {
   input.placeholder = "YouTube / Vimeo URL";
   container.appendChild(input);
 }
+
+// --- ADD THIS NEW SNIPPET ---
+function addVideoFile() {
+  let container = document.getElementById("video-file-container");
+  let input = document.createElement("input");
+  input.type = "file";
+  input.name = "video_files[]";
+  input.classList.add("form-control", "mb-2");
+  input.accept = "video/mp4,video/webm,video/ogg";
+  container.appendChild(input);
+}
+// --- END SNIPPET ---
+
 // === Add new amenity fields dynamically ===
 function addInstructor() {
   let container = document.getElementById("instructors-container");
@@ -404,10 +454,7 @@ function submitNewAmenities(callback) {
     });
   });
 }
-
 </script>
-
-
 <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

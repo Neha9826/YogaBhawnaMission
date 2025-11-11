@@ -273,6 +273,8 @@ $sql = "
     p.price_per_person,
     p.nights,
     p.meals_included,
+    p.max_persons,
+    p.view_count,
     r.id AS retreat_id,
     r.title AS retreat_title,
     o.id AS org_id,
@@ -327,7 +329,7 @@ function render_filter_group($title, $input_name, $items, $selected_values, $ite
 }
 
 function render_price_filter($config, $selected_ranges) {
-    $html = "<h5 class='filter-title'>Price per trip (₹)</h5>";
+    $html = "<h5 class='filter-title'>Price per Course (₹)</h5>";
     $html .= "<div style='padding-bottom: 1rem;' class='filter-content filter-scroll-box'>";
     
     foreach ($config as $key => $range) {
@@ -424,6 +426,10 @@ $pageTitle = "Find & Book Yoga Retreats";
             <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
 
             <h4 style="padding-bottom: 1rem;" class="filter-title-bold">Filters</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-apply-filters btn-sm w-50" type="submit">Apply</button>
+              <a href="list.php" class="btn btn-clear-filters btn-sm">Clear All</a>
+            </div>
 
             <?php echo render_filter_group(
                 $dynamic_filter_config['deal']['title'],
@@ -575,10 +581,7 @@ $pageTitle = "Find & Book Yoga Retreats";
                 $dynamic_filters['type']
             ); ?>
 
-            <div class="d-grid gap-2">
-              <button class="btn btn-apply-filters" type="submit">Apply Filters</button>
-              <a href="list.php" class="btn btn-clear-filters">Clear All</a>
-            </div>
+            
 
           </form>
         </div>
@@ -641,6 +644,8 @@ $pageTitle = "Find & Book Yoga Retreats";
                             <i class="bi bi-geo-alt-fill"></i> <span><?= htmlspecialchars($pkg['country']) ?></span>
                           </div>
                           <div class="card-top-right">
+                            <!-- <span><i class="bi bi-eye"></i> 132</span> -->
+                            <span><i class="bi bi-eye"></i> <?= (int)$pkg['view_count'] ?></span>
                             <span><i class="bi bi-star-fill"></i> 4.5 (120)</span>
                           </div>
                         </div>
@@ -655,7 +660,11 @@ $pageTitle = "Find & Book Yoga Retreats";
                       </div>
                       <div class="horizontal-footer">
                         <div class="footer-left-info">
-                          <span><i class="bi bi-calendar-event"></i> <?= (int)$pkg['nights'] ?> nights</span>
+                            <?php $persons = (int)$pkg['max_persons']; ?>
+                            <span>
+                                <i class="bi bi-person"></i> <?= $persons ?> <?= ($persons == 1 ? 'person' : 'persons') ?>
+                            </span>
+                            <span><i class="bi bi-calendar-event"></i> <?= (int)$pkg['nights'] ?> nights</span>
                         </div>
                         <div class="footer-price-action">
                           <div class="package-card-price">

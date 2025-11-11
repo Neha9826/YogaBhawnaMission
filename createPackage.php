@@ -57,7 +57,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title']);
     $slug = strtolower(str_replace(' ', '-', $title));
     $description = trim($_POST['description']);
+    // --- ADD THIS SNIPPET ---
+    $highlights = trim($_POST['highlights']);
+    $accommodation_overview = trim($_POST['accommodation_overview']);
+    // --- END SNIPPET ---
     $program = trim($_POST['program']); 
+    // --- ADD THIS SNIPPET ---
+    $whats_included = trim($_POST['whats_included']);
+    $whats_excluded = trim($_POST['whats_excluded']);
+    $cancellation_policy = trim($_POST['cancellation_policy']);
+    // --- END SNIPPET ---
     $price_per_person = floatval($_POST['price_per_person']);
     $min_persons = intval($_POST['min_persons']);
     $max_persons = intval($_POST['max_persons']);
@@ -77,19 +86,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($error)) {
+        // --- REPLACE THIS QUERY ---
         $stmt = $conn->prepare("
             INSERT INTO yoga_packages 
-            (retreat_id, title, slug, description, program, price_per_person, min_persons, max_persons, nights, meals_included, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            (retreat_id, title, slug, description, 
+             highlights, accommodation_overview, 
+             program, whats_included, whats_excluded, cancellation_policy, 
+             price_per_person, min_persons, max_persons, nights, meals_included, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
+        // --- END REPLACEMENT ---
         if ($stmt) {
             $stmt->bind_param(
-                "issssiiii", 
+                "issssssssssiiiii", 
                 $retreat_id,
                 $title,
                 $slug,
                 $description,
+                // --- ADD THIS SNIPPET ---
+                $highlights,
+                $accommodation_overview,
+                // --- END SNIPPET ---
                 $program,
+                // --- ADD THIS SNIPPET ---
+                $whats_included,
+                $whats_excluded,
+                $cancellation_policy,
+                // --- END SNIPPET ---
                 $price_per_person,
                 $min_persons,
                 $max_persons,
@@ -177,6 +200,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 // ✅ END NEW: Save dynamic fields
+
+                // --- ADD THIS SNIPPET ---
+                // Save "Add More" extra sections
+                if (!empty($_POST['extra_title']) && !empty($_POST['extra_description'])) {
+                    $extra_titles = $_POST['extra_title'];
+                    $extra_descriptions = $_POST['extra_description'];
+                    
+                    $extraStmt = $conn->prepare("
+                        INSERT INTO yoga_package_extra_sections (package_id, title, description, sort_order) 
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    
+                    foreach ($extra_titles as $i => $title) {
+                        $title = trim($title);
+                        $desc = trim($extra_descriptions[$i]);
+                        $sort_order = $i + 1;
+                        
+                        if ($title && $desc) {
+                            $extraStmt->bind_param("issi", $package_id, $title, $desc, $sort_order);
+                            $extraStmt->execute();
+                        }
+                    }
+                    $extraStmt->close();
+                }
+                // --- END SNIPPET ---
 
                 $success = "Package created successfully!";
             } else {
@@ -276,10 +324,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="button" class="btn btn-secondary mt-2" id="addRowBtn">+ Add Another</button>
                 </div> -->
 
+                <div class="col-12">
+                    <label class="form-label">Highlights</label>
+                    <textarea name="highlights" id="highlights_editor" class="form-control tinymce-editor" rows="10"></textarea>
+                </div>
+                
                 <!-- ========== Program ========== -->
                 <div class="col-12">
                     <label class="form-label">Program</label>
-                    <textarea name="program" id="program_editor" class="form-control" rows="10"></textarea>
+                    <textarea name="program" id="program_editor" class="form-control tinymce-editor" rows="10"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Accommodation Overview</label>
+                    <textarea name="accommodation_overview" id="accommodation_overview_editor" class="form-control tinymce-editor" rows="10" placeholder="A general description of the accommodation. Specific room types are added below."></textarea>
                 </div>
 
                 <!-- ========== Accommodation Options ========== -->
@@ -322,6 +380,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      <?php echo render_dynamic_field_block('Type', 'type', $all_types); ?>
                      <?php echo render_dynamic_field_block('Category', 'category', $all_categories); ?>
                 </div>
+
+                <div class="col-12">
+                    <label class="form-label">What's Included</label>
+                    <textarea name="whats_included" id="whats_included_editor" class="form-control tinymce-editor" rows="10"></textarea>
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label">What's Excluded</label>
+                    <textarea name="whats_excluded" id="whats_excluded_editor" class="form-control tinymce-editor" rows="10"></textarea>
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label">Cancellation Policy</label>
+                    <textarea name="cancellation_policy" id="cancellation_policy_editor" class="form-control tinymce-editor" rows="10"></textarea>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="col-12">
+                    <h3 class="h5">Extra Information Sections (Optional)</h3>
+                    <p class="text-muted small">Add extra sections like "FAQs", "Location Details", or "Things to Bring".</p>
+                    <div id="extra_sections_container">
+                        </div>
+                    <button type="button" class="btn btn-secondary mt-2" id="add_extra_section_btn">+ Add Section</button>
+                </div>
+
                 <hr class="my-4">
 
                 <div class="col-12">
@@ -385,14 +469,59 @@ document.addEventListener('click', function(e) {
 </script>
 
 <script>
-  tinymce.init({
-    selector: 'textarea#program_editor',
-    plugins: 'lists link image table code help wordcount bold italic underline',
-    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code'
-  });
-</script>
+  function initTinyMCE(selector) {
+    tinymce.init({
+      selector: selector,
+      plugins: 'lists link image table code help wordcount bold italic underline',
+      toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code'
+    });
+  }
+  
+  // Initialize all editors that are already on the page
+  initTinyMCE('textarea.tinymce-editor');
 
-<script>
+  let extraSectionCounter = 0;
+
+document.getElementById('add_extra_section_btn').addEventListener('click', function() {
+    extraSectionCounter++;
+    const container = document.getElementById('extra_sections_container');
+    
+    const newSection = document.createElement('div');
+    newSection.classList.add('extra-section-item', 'border', 'p-3', 'mb-3', 'bg-light');
+    
+    const newEditorId = 'extra_editor_' + extraSectionCounter;
+    
+    newSection.innerHTML = `
+        <div class="row">
+            <div class="col-10">
+                <label class="form-label fw-bold">Section Title</label>
+                <input type="text" name="extra_title[]" class="form-control mb-2" placeholder="e.g., FAQ" required>
+            </div>
+            <div class="col-2 text-end">
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeExtraSection(this)">Remove</button>
+            </div>
+        </div>
+        <label class="form-label">Section Description</label>
+        <textarea name="extra_description[]" id="${newEditorId}" class="form-control" rows="5"></textarea>
+    `;
+    
+    container.appendChild(newSection);
+    
+    // IMPORTANT: Initialize TinyMCE on the new textarea
+    initTinyMCE('textarea#' + newEditorId);
+});
+
+function removeExtraSection(button) {
+    const sectionItem = button.closest('.extra-section-item');
+    // We need to properly remove the TinyMCE instance before removing the element
+    const textareaId = sectionItem.querySelector('textarea').id;
+    if (tinymce.get(textareaId)) {
+        tinymce.get(textareaId).remove();
+    }
+    sectionItem.remove();
+}
+
+
 function addDynamicInput(type, title) {
     // type = 'deal', title = 'Deals'
     // type = 'airport_transfer', title = 'Airport Transfer'
