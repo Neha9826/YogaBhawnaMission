@@ -129,8 +129,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 // Insert Accommodation (existing logic)
-                if (!empty($_POST['accommodation_type']) && !empty($_POST['accommodation_price'])) {
-                    // ... (your existing accommodation logic) ...
+                // Insert Accommodation options if provided
+                if (!empty($_POST['accommodation_type'])) {
+                    $uploadDir = "uploads/accommodations/"; // Make sure this path is correct and writable
+                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+                    $types = $_POST['accommodation_type'];
+                    $prices = $_POST['accommodation_price'];
+                    $persons_list = $_POST['persons'];
+                    $details_list = $_POST['more_detail'];
+
+                    // Updated INSERT statement
+                    $accStmt = $conn->prepare("
+                        INSERT INTO yoga_package_accommodations 
+                        (package_id, accommodation_type, price_per_person, persons, more_detail, created_at)
+                        VALUES (?, ?, ?, ?, ?, NOW())
+                    ");
+                    
+                    // Prepare image insert
+                    $imgStmt = $conn->prepare("INSERT INTO yoga_accommodation_images (accommodation_id, image_path) VALUES (?, ?)");
+
+                    foreach ($types as $i => $type) {
+                        $type = trim($type);
+                        $price = floatval($prices[$i]);
+                        $persons = intval($persons_list[$i]);
+                        $detail = trim($details_list[$i]);
+
+                        if ($type && $price > 0) {
+                            // Bind new params and execute
+                            $accStmt->bind_param("isdis", $package_id, $type, $price, $persons, $detail);
+                            $accStmt->execute();
+                            $acc_id = $accStmt->insert_id; // Get the new accommodation ID
+
+                            // --- Handle Image Uploads for this accommodation ---
+                            $fieldName = "accommodation_images_new_$i";
+                            if (!empty($_FILES[$fieldName]['name'][0])) {
+                                foreach ($_FILES[$fieldName]['tmp_name'] as $k => $tmp) {
+                                    if (is_uploaded_file($tmp)) {
+                                        $filename = time() . "_" . preg_replace('/[^a-zA-Z0-9._-]/', '_', $_FILES[$fieldName]['name'][$k]);
+                                        $targetPath = $uploadDir . $filename;
+                                        
+                                        if (move_uploaded_file($tmp, $targetPath)) {
+                                            $relPath = $uploadDir . $filename; // Store relative path
+                                            $imgStmt->bind_param("is", $acc_id, $relPath);
+                                            $imgStmt->execute();
+                                        }
+                                    }
+                                }
+                            }
+                            // --- End Image Upload Logic ---
+                        }
+                    }
+                    $accStmt->close();
+                    $imgStmt->close();
                 }
 
                 // ✅ NEW: Save all dynamic fields
@@ -261,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
             <?php if($error): ?><div class="alert alert-danger"><?= $error ?></div><?php endif; ?>
 
-            <form method="post" class="row g-3">
+            <form method="post" enctype="multipart/form-data" class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Organization</label>
                     <select name="organization_id" id="organization_id" class="form-control" required>
@@ -285,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Price per Person (₹)</label>
+                    <label class="form-label">Price (₹)</label>
                     <input type="number" step="0.01" name="price_per_person" class="form-control" required>
                 </div>
 
@@ -344,12 +395,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col-12 mt-4">
                     <label class="form-label fw-bold">Accommodation Options</label>
                     <div id="accommodationContainer">
-                        <div class="row mb-2 accommodation-row">
-                        <div class="col-md-7"><input type="text" name="accommodation_type[]" class="form-control" placeholder="Accommodation Type (e.g. Shared Room, Deluxe Cottage)" required></div>
-                        <div class="col-md-3"><input type="number" step="0.01" name="accommodation_price[]" class="form-control" placeholder="Price (₹)" required></div>
-                        <div class="col-md-2"><button type="button" class="btn btn-danger removeAccRow">Remove</button></div>
+                        
+                        <div class="accommodation-block border rounded p-3 mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label">Accommodation Type</label>
+                                    <input type="text" name="accommodation_type[]" class="form-control" placeholder="e.g. Shared Room, Deluxe Cottage" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Price (₹)</label>
+                                    <input type="number" step="0.01" name="accommodation_price[]" class="form-control" placeholder="Price (₹)" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Max Persons</label>
+                                    <input type="number" name="persons[]" class="form-control" value="1" required>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger w-100 removeAccRow">Remove</button>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">More Detail (Optional)</label>
+                                    <textarea name="more_detail[]" class="form-control" rows="2"></textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Upload Images</label>
+                                    <input type="file" name="accommodation_images_new_0[]" class="form-control" multiple accept="image/*">
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        </div>
                     <button type="button" class="btn btn-secondary mt-2" id="addAccRowBtn">+ Add Another</button>
                 </div>
 
@@ -447,25 +521,55 @@ document.getElementById('organization_id').addEventListener('change', function()
 <?php include __DIR__.'/includes/footer.php'; ?>
 
 <script>
-// Schedule Rows (Existing)
-document.getElementById('addRowBtn').addEventListener('click', function() {
-  // ... (your existing add schedule row logic) ...
+// --- ADD THIS NEW SCRIPT BLOCK ---
+
+let accCounter = 1; // Start counter at 1 since 0 is already on the page
+document.getElementById('addAccRowBtn').addEventListener('click', function() {
+  const container = document.getElementById('accommodationContainer');
+  const newRow = document.createElement('div');
+  // Use the correct class from your HTML
+  newRow.classList.add('accommodation-block', 'border', 'rounded', 'p-3', 'mb-3'); 
+  
+  // Use the unique counter for the file input name
+  newRow.innerHTML = `
+    <div class="row g-3">
+        <div class="col-md-5">
+            <label class="form-label">Accommodation Type</label>
+            <input type="text" name="accommodation_type[]" class="form-control" placeholder="e.g. Shared Room, Deluxe Cottage" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Price (₹)</label>
+            <input type="number" step="0.01" name="accommodation_price[]" class="form-control" placeholder="Price (₹)" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Max Persons</label>
+            <input type="number" name="persons[]" class="form-control" value="1" required>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-danger w-100 removeAccRow">Remove</button>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">More Detail (Optional)</label>
+            <textarea name="more_detail[]" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Upload Images</label>
+            <input type="file" name="accommodation_images_new_${accCounter}[]" class="form-control" multiple accept="image/*">
+        </div>
+    </div>`;
+  container.appendChild(newRow);
+  accCounter++; // Increment the counter
 });
+
+// This is the correct remove logic for the new block
 document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('removeRow')) {
-    // ... (your existing remove schedule row logic) ...
+  if (e.target.classList.contains('removeAccRow')) {
+    e.target.closest('.accommodation-block').remove();
   }
 });
 
-// Accommodation Rows (Existing)
-document.getElementById('addAccRowBtn').addEventListener('click', function() {
-  // ... (your existing add accommodation row logic) ...
-});
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('removeAccRow')) {
-    // ... (your existing remove accommodation row logic) ...
-  }
-});
+// --- END OF NEW SCRIPT BLOCK ---
+
 </script>
 
 <script>

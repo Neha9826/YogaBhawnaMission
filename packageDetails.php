@@ -180,7 +180,9 @@ if ($conn->query("SHOW TABLES LIKE 'yoga_retreat_media'")->num_rows) {
 
 // --- fetch accommodations for this package (and their images)
 $accommodations = [];
-$acQ = $conn->prepare("SELECT id, accommodation_type, price_per_person FROM yoga_package_accommodations WHERE package_id = ? ORDER BY id ASC");
+// --- THIS IS THE FIX ---
+// We've added `persons` and `more_detail` to the query.
+$acQ = $conn->prepare("SELECT id, accommodation_type, price_per_person, persons, more_detail FROM yoga_package_accommodations WHERE package_id = ? ORDER BY id ASC");
 if ($acQ) {
     $acQ->bind_param('i', $packageId);
     $acQ->execute();
@@ -709,86 +711,83 @@ if ($gridCount === 0 && !$first_video) {
    Focus: Header Gallery & CTA Buttons
    =========================== */
 
-/* ----- Gallery grid responsiveness ----- */
-@media (max-width: 1199px) {
-  .gallery-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-  }
-}
+    /* ----- Gallery grid responsiveness ----- */
+    @media (max-width: 1199px) {
+      .gallery-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+      }
+    }
 
-@media (max-width: 767px) {
-  .gallery-grid {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-  }
-  .gallery-grid img,
-  .gallery-grid video {
-    width: 100% !important;
-    height: auto !important;
-    object-fit: cover !important;
-  }
-}
+    @media (max-width: 767px) {
+      .gallery-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      .gallery-grid img,
+      .gallery-grid video {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover !important;
+      }
+    }
 
-/* Center gallery inside container for small screens */
-@media (max-width: 575px) {
-  .gallery-grid {
-    margin: 0 auto;
-    max-width: 95%;
-  }
-}
+    /* Center gallery inside container for small screens */
+    @media (max-width: 575px) {
+      .gallery-grid {
+        margin: 0 auto;
+        max-width: 95%;
+      }
+    }
 
 
-/* ----- “Request to Book” + “Send Inquiry” Buttons ----- */
-@media (max-width: 991px) {
-  .booking-cta-buttons {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
-    position: static !important;
-    width: 100% !important;
-    margin-top: 15px !important;
-  }
-  .booking-cta-buttons .btn {
-    width: 100% !important;
-    font-size: 1rem !important;
-    padding: 12px !important;
-  }
-}
+    /* ----- “Request to Book” + “Send Inquiry” Buttons ----- */
+    @media (max-width: 991px) {
+      .booking-cta-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        position: static !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+      }
+      .booking-cta-buttons .btn {
+        width: 100% !important;
+        font-size: 1rem !important;
+        padding: 12px !important;
+      }
+    }
 
-/* For smaller mobiles, fix button text wrapping and stacking */
-@media (max-width: 575px) {
-  .booking-cta-buttons .btn {
-    font-size: 0.9rem !important;
-    padding: 10px !important;
-  }
-  .booking-cta-buttons {
-    margin-top: 20px !important;
-  }
-}
+    /* For smaller mobiles, fix button text wrapping and stacking */
+    @media (max-width: 575px) {
+      .booking-cta-buttons .btn {
+        font-size: 0.9rem !important;
+        padding: 10px !important;
+      }
+      .booking-cta-buttons {
+        margin-top: 20px !important;
+      }
+    }
 
-/* ----- Optional tweak for sticky button behavior ----- */
-@media (max-width: 480px) {
-  .booking-cta-buttons {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    background: #fff !important;
-    padding: 10px !important;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    z-index: 999;
-  }
-}
+    /* ----- Optional tweak for sticky button behavior ----- */
+    @media (max-width: 480px) {
+      .booking-cta-buttons {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: #fff !important;
+        padding: 10px !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 999;
+      }
+    }
 
   </style>
 </head>
 <body class="yoga-page">
-
 <?php include __DIR__ . '/ybm_navbar.php'; ?>
-
-
 <div class="gallery-grid gallery-count-<?= $gridCount ?>">
     
     <?php 
@@ -907,22 +906,6 @@ if ($gridCount === 0 && !$first_video) {
                 ?>
             </div>
           </section>
-
-        <section class="content-section">
-          <h2 class="section-title">Facilities</h2>
-          <?php if (!empty($amenities)): ?>
-            <ul class="highlight-list">
-              <?php foreach ($amenities as $am): ?>
-                <li>
-                  <i class="icon <?= esc($am['icon_class'] ?: 'bi-check-circle-fill') ?>"></i>
-                  <span><?= esc($am['name']) ?></span>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p class="text-muted">No facilities listed yet.</p>
-          <?php endif; ?>
-        </section>
         
         <section class="content-section">
             <div class="row">
@@ -957,6 +940,21 @@ if ($gridCount === 0 && !$first_video) {
               </p>
             </div>
           </section>
+          <section class="content-section">
+          <h2 class="section-title">Facilities</h2>
+          <?php if (!empty($amenities)): ?>
+            <ul class="highlight-list">
+              <?php foreach ($amenities as $am): ?>
+                <li>
+                  <i class="icon <?= esc($am['icon_class'] ?: 'bi-check-circle-fill') ?>"></i>
+                  <span><?= esc($am['name']) ?></span>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p class="text-muted">No facilities listed yet.</p>
+          <?php endif; ?>
+        </section>
 
         <section class="content-section">
           <h2 class="section-title">Program</h2>
@@ -1096,28 +1094,42 @@ if ($gridCount === 0 && !$first_video) {
             </div>
         </section>    
 
-        <?php if (!empty($videos)): ?>
+        <?php 
+    $modal_index = 0; // Start modal index at 0
+    
+    // --- RENDER VIDEO FIRST, IF IT EXISTS ---
+    if ($first_video): 
+        $vid = $first_video;
+        
+        // ✅ FIX: Check type OR path, to be safe
+        $is_file = ($vid['type'] == 'video_file' || str_starts_with($vid['media_path'], 'uploads/'));
+    ?>
           <section class="content-section">
             <h2 class="section-title">Videos</h2>
             <div class="ratio ratio-16x9">
-              <?php
-              $v = $videos[0];
-              $mp = esc($v['media_path']);
-              if (strpos($mp, 'youtube.com') !== false || strpos($mp, 'youtu.be') !== false) {
-                  $ytid = null;
-                  if (preg_match('#(?:v=|/)([A-Za-z0-9_-]{6,})#', $mp, $m)) $ytid = $m[1];
-                  if ($ytid) {
-                      echo '<iframe src="https://www.youtube.com/embed/' . esc($ytid) . '" style="width:100%;height:100%; border-radius: 8px;" frameborder="0" allowfullscreen></iframe>';
-                  } else {
-                      echo '<a href="' . $mp . '" target="_blank">' . $mp . '</a>';
-                  }
-              } else {
-                  echo '<a href="' . $mp . '" target="_blank">' . $mp . '</a>';
-              }
-              ?>
+              <?php if ($is_file): ?>
+                <video playsinline muted loop controls preload="metadata">
+                    <source src="<?= esc(getImagePath($vid['media_path'])) ?>">
+                </video>
+            <?php else: // Embed YouTube/Vimeo Link
+                $embed_url = '';
+                if (preg_match('/(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/', $vid['media_path'], $matches)) {
+                    $embed_url = 'https://www.youtube.com/embed/' . $matches[2] . '?autoplay=1&mute=1&loop=1&playlist=' . $matches[2];
+                } elseif (preg_match('/vimeo\.com\/([0-9]+)/', $vid['media_path'], $matches)) {
+                    $embed_url = 'https://player.vimeo.com/video/' . $matches[1] . '?autoplay=1&muted=1&loop=1&background=1';
+                }
+            ?>
+                <?php if ($embed_url): ?>
+                    <iframe src="<?= $embed_url ?>" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                <?php else: ?>
+                    <div class="p-3 text-white">Video format not supported for grid preview.</div>
+                <?php endif; ?>
+            <?php endif; ?>
             </div>
           </section>
-        <?php endif; ?>
+        <?php 
+        $modal_index++; // Increment modal index
+    endif; ?>
 
       </div> <div class="col-lg-4">
         <div class="booking-box-sticky">
@@ -1179,25 +1191,44 @@ if ($gridCount === 0 && !$first_video) {
 
                 <?php if (!empty($accommodations)): ?>
                   <?php foreach ($accommodations as $idx => $acc): 
-                    $priceLabel = number_format((float)$acc['price_per_person'], 0);
-                    $imgsJson = htmlspecialchars(json_encode(array_column($acc['images'],'image_path')), ENT_QUOTES, 'UTF-8');
+                      // --- Your existing variables are preserved ---
+                      $priceLabel = number_format((float)$acc['price_per_person'], 0);
+                      $imgsJson = htmlspecialchars(json_encode(array_column($acc['images'],'image_path')), ENT_QUOTES, 'UTF-8');
                   ?>
-                    <label class="list-group-item list-group-item-action" data-price="<?= (float)$acc['price_per_person'] ?>">
+                  <label class="list-group-item list-group-item-action" data-price="<?= (float)$acc['price_per_person'] ?>">
                       <div class="d-flex w-100 justify-content-between">
-                         <div>
-                            <input type="radio" name="accommodation_id" value="<?= (int)$acc['id'] ?>" onchange="updateSelectedPrice(this)">
-                            <span class="fw-bold ms-2"><?= htmlspecialchars($acc['accommodation_type']) ?></span>
-                         </div>
-                         <span class="accom-price">₹<?= $priceLabel ?></span>
-                      </div>
+                          <div class="d-flex">
+                              <input type="radio" name="accommodation_id" value="<?= (int)$acc['id'] ?>" onchange="updateSelectedPrice(this)" class="mt-1">
+                              
+                              <div class="ms-2"> 
+                                  <span class="fw-bold d-block small">
+                                      <?= htmlspecialchars($acc['persons']) ?> Persons
+                                  </span>
+                                  <span class="d-block small">
+                                      <?= htmlspecialchars($acc['accommodation_type']) ?>
+                                  </span>
+                                  <?php if (!empty(trim($acc['more_detail']))): ?>
+                                  <small class="text-muted d-block">
+                                      <?= htmlspecialchars(trim($acc['more_detail'])) ?>
+                                  </small>
+                                  <?php endif; ?>
+                              </div>
+                          </div>
+                          <div class="accom-price text-end">
+                              <span class="fw-bold">₹<?= $priceLabel ?></span><br>
+                              <small class="text-muted ">Total Price</small>
+                          </div>
+                          </div>
+                      
                       <?php if (!empty($acc['images'])): ?>
-                        <div class="mt-1 ms-4">
-                            <a href="#" class="show-photos-btn" onclick='event.preventDefault(); openAccomModal(<?= json_encode(htmlspecialchars($acc["accommodation_type"])) ?>, <?= $imgsJson ?>, <?= json_encode($priceLabel) ?>)'>
+                      <div class="mt-1 ms-4">
+                          <a href="#" class="show-photos-btn" onclick='event.preventDefault(); openAccomModal(<?= json_encode(htmlspecialchars($acc["accommodation_type"])) ?>, <?= $imgsJson ?>, <?= json_encode($priceLabel) ?>)'>
                               Show photos
-                            </a>
-                        </div>
+                          </a>
+                      </div>
                       <?php endif; ?>
-                    </label>
+                      
+                  </label>
                   <?php endforeach; ?>
                 <?php endif; ?>
               </div>
