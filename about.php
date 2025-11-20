@@ -25,7 +25,7 @@
                 <div class="row align-items-center">
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/about.png" alt="Image">
+                            <img src="img/yoga_1.jpg" alt="Image">
                         </div>
                     </div>
                     <div class="col-lg-7 col-md-6">
@@ -72,14 +72,14 @@
                     </div>
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/about.png" alt="Image">
+                            <img src="img/yoga_2.jpg" alt="Image">
                         </div>
                     </div>
                 </div>
                 <div class="row align-items-center">
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/about.png" alt="Image">
+                            <img src="img/yoga_3.jpg" alt="Image">
                         </div>
                     </div>
                     <div class="col-lg-7 col-md-6">
@@ -111,7 +111,7 @@
                     </div>
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/about.png" alt="Image">
+                            <img src="img/yoga_4.jpg" alt="Image">
                         </div>
                     </div>
                 </div>

@@ -319,12 +319,14 @@ if ($gridCount === 0 && !$first_video) {
     .hero { display: none; }
 
     /* --- New Gallery Grid (Dynamic) --- */
+    /* --- Replace with this --- */
     .gallery-grid {
       display: grid;
       gap: 8px;
       height: 450px; /* Adjust height as needed */
       max-width: 1200px;
-      margin: 1rem auto;
+      /* ✅ FIX: Changed margin to add 2rem of space at the top */
+      margin: 3rem auto 1rem auto; /* (This is shorthand for top, right, bottom, left) */
       padding: 0 1rem;
     }
     .gallery-item {

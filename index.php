@@ -2,6 +2,33 @@
 <html lang="en">
     <head>
         <?php include 'head.php'; ?>
+        <meta name="description" content="Yoga Bhawna Mission is a serene yoga retreat and teacher training center on the banks of the Bhagirathi River in Uttarkashi, Uttarakhand. Join 200-hour TTC, meditation, pranayama and Himalayan ashram life in a peaceful Himalayan setting.">
+
+<meta name="keywords" content="Yoga Bhawna Mission, Yoga retreat Uttarkashi, Yoga TTC Uttarakashi, Himalayan yoga school, ashram in Uttarkashi, yoga teacher training India, river side yoga Uttarakhand, yoga ashram Garhwal Himalayas, Uttarkashi yoga retreat, spiritual retreat Himalayas, yoga school Uttarkashi">
+
+<meta name="author" content="Yoga Bhawna Mission">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="geo.region" content="IN-UT">
+<meta name="geo.placename" content="Uttarkashi, Uttarakhand, India">
+<meta name="geo.position" content="30.7280;78.4438">
+<meta name="ICBM" content="30.7280, 78.4438">
+
+<link rel="canonical" href="https://yogbhawnamission.com/">
+
+<meta property="og:title" content="Yoga Bhawna Mission | Himalayan Yoga Retreat in Uttarkashi">
+<meta property="og:description" content="Experience yoga teacher training, meditation, and Himalayan ashram life at Yoga Bhawna Mission in Uttarkashi, Uttarakhand — by the Bhagirathi River.">
+<meta property="og:image" content="https://yogbhawnamission.com/images/your-banner-or-photo.jpg">
+<meta property="og:url" content="https://yogbhawnamission.com/">
+<meta property="og:type" content="organization">
+<meta property="og:site_name" content="Yoga Bhawna Mission">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Yoga Bhawna Mission – Yoga Retreat & TTC in Uttarkashi">
+<meta name="twitter:description" content="Join Yoga Bhawna Mission in Uttarkashi for yoga teacher training, meditation, and spiritual retreat in the Himalayan foothills.">
+<meta name="twitter:image" content="https://yogbhawnamission.com/images/your-banner-or-photo.jpg">
+
     </head>
 
     <body>
@@ -595,6 +622,7 @@
             }
         });
         </script>
+        
         
 
     </body>

@@ -2,7 +2,7 @@
 $host = "localhost";
 $user = "root";
 $pass = ""; 
-$db = "shivoham_retreat";
+$db = "yog_bhawna_misson";
 
 $conn = new mysqli($host, $user, $pass, $db);
 
