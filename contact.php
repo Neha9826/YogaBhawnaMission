@@ -42,7 +42,7 @@
                         <div class="row">
                             <div class="col-md-4 contact-item wow zoomIn" data-wow-delay="0.2s">
                                 <a href="https://maps.app.goo.gl/9ECkvdQ3eDhpAENP9">
-                                    <i class="fa fa-map-marker-alt"></i>
+                                    <i class="fa fa-map-marker"></i>
                                     <div class="contact-text">
                                         <h2>Location</h2>
                                         <p>Chungi Badethi, Gangotri ByPass Road, Uttarkashi, Uttarakhand-249193</p>
@@ -51,7 +51,7 @@
                             </div>
                             <div class="col-md-4 contact-item wow zoomIn" data-wow-delay="0.4s">
                                 <a href="tel:+919917003456">
-                                    <i class="fa fa-phone-alt"></i>
+                                    <i class="fa fa-phone"></i>
                                     <div class="contact-text">
                                         <h2>Phone</h2>
                                         <p>+91-9917003456</p>
@@ -117,14 +117,14 @@
 
 
         <!-- Footer Start -->
-        <?php include 'ybm_footer.php'; ?>
+        <?php include 'includes/footer.php' ; ?>
         <!-- Footer End -->
 
         <a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
 
         <div class="whatsapp widget-sec">
           <a href="tel:+919917003456" class="cta-btn phone" title="Call Now">
-            <i class="fa fa-phone-alt"></i>
+            <i class="fa fa-phone"></i>
           </a>
           <a aria-label="Chat on WhatsApp" href="https://wa.me/+919917003456" target="_blank" class="cta-btn whatsapp" title="Chat on WhatsApp">
             <i class="fab fa-whatsapp"></i>

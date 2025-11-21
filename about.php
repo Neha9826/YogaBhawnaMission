@@ -154,12 +154,13 @@
         </div>
         <!-- Card End -->
          
-        <?php include 'ybm_footer.php' ; ?>
+        <!-- Footer Start -->
+        <?php include 'includes/footer.php' ; ?>
         <a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
 
         <div class="whatsapp widget-sec">
           <a href="tel:+919917003456" class="cta-btn phone" title="Call Now">
-            <i class="fa fa-phone-alt"></i>
+            <i class="fa fa-phone"></i>
           </a>
           <a aria-label="Chat on WhatsApp" href="https://wa.me/+919917003456" target="_blank" class="cta-btn whatsapp" title="Chat on WhatsApp">
             <i class="fab fa-whatsapp"></i>

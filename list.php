@@ -723,6 +723,15 @@ $pageTitle = "Find & Book Yoga Retreats";
 
   <?php include 'filterModal.php'; ?>
   <?php include 'includes/footer.php'; ?>
+
+  <div class="whatsapp widget-sec">
+          <a href="tel:+919917003456" class="cta-btn phone" title="Call Now">
+            <i class="fa fa-phone"></i>
+          </a>
+          <a aria-label="Chat on WhatsApp" href="https://wa.me/+919917003456" target="_blank" class="cta-btn whatsapp" title="Chat on WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+          </a>
+        </div>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
