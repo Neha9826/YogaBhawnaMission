@@ -22,8 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $country = mysqli_real_escape_string($conn, $_POST['country']);
     $state = mysqli_real_escape_string($conn, $_POST['state'] ?? '');
     $city = mysqli_real_escape_string($conn, $_POST['city'] ?? '');
-    $lat = mysqli_real_escape_string($conn, $_POST['location_lat']);
-    $lng = mysqli_real_escape_string($conn, $_POST['location_lng']);
+    
+    // REMOVED: $lat and $lng
+    
+    // NEW: Capture both map link fields
+    $map_link = mysqli_real_escape_string($conn, $_POST['map_link']); 
+    $map_embed_link = mysqli_real_escape_string($conn, $_POST['map_embed_link']); 
+
     $created_by = $_SESSION['yoga_host_id'];
 
     if (empty($_FILES['gst_doc']['name']) && empty($_FILES['msme_doc']['name'])) {
@@ -66,10 +71,11 @@ if (!empty($_FILES['msme_doc']['name'])) {
 }
 
     if (empty($errors)) {
+        // UPDATED SQL: Removed location_lat, location_lng. Added map_link and map_embed_link.
         $sql = "INSERT INTO organizations 
-        (name, slug, website, contact_email, contact_phone, address, continent, country, state, city, location_lat, location_lng, created_by, gst_doc, msme_doc, status)
+        (name, slug, website, contact_email, contact_phone, address, continent, country, state, city, created_by, gst_doc, msme_doc, map_link, map_embed_link, status)
         VALUES 
-        ('$name','$slug','$website','$contact_email','$contact_phone','$address','$continent','$country','$state','$city','$lat','$lng','$created_by','$gst_doc_path','$msme_doc_path','pending')";
+        ('$name','$slug','$website','$contact_email','$contact_phone','$address','$continent','$country','$state','$city','$created_by','$gst_doc_path','$msme_doc_path','$map_link','$map_embed_link','pending')";
 
         if (mysqli_query($conn, $sql)) {
             $success = "Organization registered successfully! Await admin approval.";
@@ -159,20 +165,19 @@ if (!empty($_FILES['msme_doc']['name'])) {
                     </div>
                     <div class="col-md-6 mb-3">
                         <label>Address</label>
-                        <input type="text" name="address" class="form-control" placeholder="Enter your address">
+                        <input type="text" name="address" class="form-control" placeholder="Enter your full address">
                     </div>
+                    
                     <div class="col-md-6 mb-3">
-                        <label>Google Map Link</label>
-                        <input type="text" name="google_map_link" class="form-control" placeholder="Paste Google Maps link (optional)">
+                        <label>Map Link (Normal URL)</label>
+                        <input type="text" name="map_link" class="form-control" placeholder="Paste Google Maps URL">
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label>Latitude</label>
-                        <input type="text" name="location_lat" class="form-control" placeholder="Optional">
+                    
+                    <div class="col-md-6 mb-3">
+                        <label>Map Embed Code</label>
+                        <input type="text" name="map_embed_link" class="form-control" placeholder="Paste Map Embed iFrame code">
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label>Longitude</label>
-                        <input type="text" name="location_lng" class="form-control" placeholder="Optional">
-                    </div>
+                    
                     <div class="col-md-6 mb-3">
                         <label>GST Document</label>
                         <input type="file" name="gst_doc" class="form-control">
@@ -192,25 +197,8 @@ if (!empty($_FILES['msme_doc']['name'])) {
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
-<!-- Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
-
 <script>
-// Google Places Autocomplete
-let input = document.getElementById('address_input');
-let autocomplete = new google.maps.places.Autocomplete(input);
-
-// Keep input editable at all times
-autocomplete.setFields(['geometry', 'name', 'formatted_address']); 
-
-autocomplete.addListener('place_changed', function() {
-    let place = autocomplete.getPlace();
-    if (place.geometry) {
-        document.getElementById('location_lat').value = place.geometry.location.lat();
-        document.getElementById('location_lng').value = place.geometry.location.lng();
-    }
-});
-
+// REMOVED: Google Places Autocomplete logic
 
 // Load continents
 const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
