@@ -1,3 +1,12 @@
+<?php
+include 'db.php';
+
+// 1. Fetch Page Data (Static Sections & Headings)
+$page = $conn->query("SELECT * FROM page_about WHERE id=1")->fetch_assoc();
+
+// 2. Fetch Mission & Vision Cards (Loop)
+$mission = $conn->query("SELECT * FROM about_mission_list ORDER BY id ASC");
+?>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -7,6 +16,7 @@
     <body>
         <?php include 'topBar.php'; ?>        
         <?php include 'ybm_navbar.php'; ?>
+
         <div class="page-header about-header">
             <div class="container">
                 <div class="row">
@@ -20,141 +30,113 @@
                 </div>
             </div>
         </div>
+
         <div class="about wow fadeInUp" data-wow-delay="0.1s">
             <div class="container">
+                
                 <div class="row align-items-center">
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/yoga_1.jpg" alt="Image">
+                            <img src="<?= htmlspecialchars($page['sec1_img']) ?>" alt="Image">
                         </div>
                     </div>
                     <div class="col-lg-7 col-md-6">
                         <div class="section-header text-left">
                             <p>About</p>
-                            <h2>Yoga Bhawana Mission</h2>
+                            <h2><?= htmlspecialchars($page['sec1_title']) ?></h2>
                         </div>
                         <div class="about-text">
-                            <p>
-                                Yoga Bhawana Mission (YBM), situated on the sacred banks of the Bhagirathi River in Uttarkashi, Uttarakhand, is not merely a yoga school — it is a Himalayan sanctuary for deep spiritual practice, mindful living, and personal transformation.
-                            </p>
-                            <p>
-                                The Sanskrit term Bhāwanā means feeling, contemplation, and devotion — qualities that shape every aspect of learning at YBM. Here, yoga is approached not as performance or posture-focused fitness, but as a conscious inner journey — a path of awareness, refinement, and self-realization.
-                            </p>
+                            <?= $page['sec1_text'] ?>
                         </div>
                     </div>
                 </div>
+
                 <div class="row align-items-center">
                     <div class="col-lg-7 col-md-6">
                         <div class="section-header text-left">
                             <p>Our Root</p>
-                            <h2>Rooted in the Himalayan Yogic Tradition</h2>
+                            <h2><?= htmlspecialchars($page['sec2_title']) ?></h2>
                         </div>
                         <div class="about-text">
-                            <p>
-                                YBM follows the timeless Himalayan lineage of yogic study, where learning expands gradually and holistically. Our teacher training and retreat programs blend classical wisdom with structured modern methodology, offering guidance in:
-                            </p>
-                            <p>
-                                •	<b>Asana & Pranayama:</b> body purification and breath mastery
-                            </p>
-                            <p>
-                                •	<b>Meditation & Mantra:</b> cultivating stillness and inner clarity
-                            </p>
-                            <p>
-                                •	<b>Ayurveda & Yogic Anatomy:</b> understanding body, energy, and healing
-                            </p>
-                            <p>
-                                •	<b>Yogic Philosophy & Ethics:</b> integrating ancient teachings into daily life
-                            </p>
-                            <p>
-                                This layered learning approach ensures practitioners don’t just practice yoga — they live yoga.
-                            </p>
+                            <?= $page['sec2_text'] ?>
                         </div>
                     </div>
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/yoga_2.jpg" alt="Image">
+                            <img src="<?= htmlspecialchars($page['sec2_img']) ?>" alt="Image">
                         </div>
                     </div>
                 </div>
+
                 <div class="row align-items-center">
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/yoga_3.jpg" alt="Image">
+                            <img src="<?= htmlspecialchars($page['sec3_img']) ?>" alt="Image">
                         </div>
                     </div>
                     <div class="col-lg-7 col-md-6">
                         <div class="section-header text-left">
                             <p>Yogi</p>
-                            <h2>A Yogic Way of Life</h2>
+                            <h2><?= htmlspecialchars($page['sec3_title']) ?></h2>
                         </div>
                         <div class="about-text">
-                            <p>
-                                Life at YBM unfolds with Himalayan rhythm — quiet sunrises, meditation by the river, disciplined practice sessions, and evenings immersed in reflection, chanting, or silent walks. Students follow a sattvic diet, early-morning routines, mindful communication, and deep study, allowing the mind to settle and awareness to expand.
-                            </p>
-                            <p>
-                                The environment nurtures humility, presence, discipline, and inner peace — enabling students to move beyond physical practice and experience the true essence of yoga.
-                            </p>
+                            <?= $page['sec3_text'] ?>
                         </div>
                     </div>
                 </div>
+
                 <div class="row align-items-center">
                     <div class="col-lg-7 col-md-6">
                         <div class="section-header text-left">
                             <p>Enlightenment</p>
-                            <h2>Transformation Beyond Certification</h2>
+                            <h2><?= htmlspecialchars($page['sec4_title']) ?></h2>
                         </div>
                         <div class="about-text">
-                            <p>
-                                The purpose of Yoga Bhawana Mission is not limited to training yoga teachers — it is to nurture conscious, balanced, compassionate beings. Graduates leave not only with accredited credentials, but with a renewed understanding of themselves, greater clarity of purpose, and the ability to guide others with authenticity and heart.
-                            </p>
+                            <?= $page['sec4_text'] ?>
                         </div>
                     </div>
                     <div class="col-lg-5 col-md-6">
                         <div class="about-img">
-                            <img src="img/yoga_4.jpg" alt="Image">
+                            <img src="<?= htmlspecialchars($page['sec4_img']) ?>" alt="Image">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Card Start-->
         <div class="service">
             <div class="container">
                 <div class="section-header text-center wow zoomIn" data-wow-delay="0.1s">
-                    <p>Yog Bhawna Mission</p>
-                    <h2>Our Mission & Vision</h2>
+                    <p><?= htmlspecialchars($page['mission_subheading']) ?></p>
+                    <h2><?= htmlspecialchars($page['mission_heading']) ?></h2>
                 </div>
                 <div class="row justify-content-center">
-                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.0s">
-                        <div class="service-item">
+                    <?php 
+                    $mDelay = 0;
+                    $mCount = 0;
+                    while($m = $mission->fetch_assoc()): 
+                        // Only the 2nd card (index 1) gets the 'active' class by default
+                        $activeM = ($mCount == 1) ? 'active' : '';
+                    ?>
+                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="<?= $mDelay ?>s">
+                        <div class="service-item <?= $activeM ?>">
                             <div class="service-icon">
-                                <i class="flaticon-yoga-pose"></i>
+                                <i class="<?= htmlspecialchars($m['icon']) ?>"></i>
                             </div>
-                            <h3>Our Mission</h3>
+                            <h3><?= htmlspecialchars($m['title']) ?></h3>
                             <p>
-                                The mission is to develop compassionate, knowledgeable, and skilled yoga teachers who exemplify yogic principles in both instruction and daily life, integrating traditional wisdom with contemporary understanding.
+                                <?= htmlspecialchars($m['description']) ?>
                             </p>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.2s">
-                        <div class="service-item active">
-                            <div class="service-icon">
-                                <i class="flaticon-workout-1"></i>
-                            </div>
-                            <h3>Our Vision</h3>
-                            <p>
-                                The vision is to establish Yoga Bhawana Mission as a global center for authentic Himalayan yoga education, where traditional knowledge informs both individual and collective well-being.
-                            </p>
-                            
-                        </div>
-                    </div>
+                    <?php 
+                    $mDelay += 0.2; 
+                    $mCount++;
+                    endwhile; 
+                    ?>
                 </div>
             </div>
         </div>
-        <!-- Card End -->
-         
-        <!-- Footer Start -->
         <?php include 'includes/footer.php' ; ?>
         <a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
 

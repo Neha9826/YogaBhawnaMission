@@ -1,74 +1,70 @@
+<?php
+include 'db.php';
+// 1. Fetch Contact Page Specifics (Title, Map)
+$page = $conn->query("SELECT * FROM page_contact WHERE id=1")->fetch_assoc();
+
+// 2. Fetch Global Settings (Phone, Email, Address)
+$settings = [];
+$res = $conn->query("SELECT * FROM site_settings");
+while($row = $res->fetch_assoc()) {
+    $settings[$row['setting_key']] = $row['setting_value'];
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <?php include 'head.php'; ?>
-    </head>
-
+    <head><?php include 'head.php'; ?></head>
     <body>
-        <!-- Top Bar Start -->
         <?php include 'topBar.php'; ?>        
-        <!-- Top Bar End -->
-        <!-- Nav Bar Start -->
         <?php include 'ybm_navbar.php'; ?>
-        <!-- Nav Bar End -->
 
-
-        <!-- Page Header Start -->
         <div class="page-header contact-header">
             <div class="container">
                 <div class="row">
-                    <div class="col-12">
-                        <h2>Contact</h2>
-                    </div>
-                    <div class="col-12">
-                        <a href="">Home</a>
-                        <a href="">Contact</a>
-                    </div>
+                    <div class="col-12"><h2>Contact</h2></div>
+                    <div class="col-12"><a href="">Home</a><a href="">Contact</a></div>
                 </div>
             </div>
         </div>
-        <!-- Page Header End -->
 
-
-        <!-- Contact Start -->
         <div class="contact">
             <div class="container">
                 <div class="section-header text-center wow zoomIn" data-wow-delay="0.1s">
                     <p>Get In Touch</p>
-                    <h2>For Any Query</h2>
+                    <h2><?= htmlspecialchars($page['page_title']) ?></h2>
                 </div>
                 <div class="row">
                     <div class="col-12">
                         <div class="row">
                             <div class="col-md-4 contact-item wow zoomIn" data-wow-delay="0.2s">
-                                <a href="https://maps.app.goo.gl/9ECkvdQ3eDhpAENP9">
+                                <a href="<?= htmlspecialchars($page['map_direction_url']) ?>" target="_blank">
                                     <i class="fa fa-map-marker"></i>
                                     <div class="contact-text">
                                         <h2>Location</h2>
-                                        <p>Chungi Badethi, Gangotri ByPass Road, Uttarkashi, Uttarakhand-249193</p>
+                                        <p><?= htmlspecialchars($settings['address']) ?></p>
                                     </div>
                                 </a>
                             </div>
                             <div class="col-md-4 contact-item wow zoomIn" data-wow-delay="0.4s">
-                                <a href="tel:+919917003456">
+                                <a href="tel:<?= htmlspecialchars($settings['contact_phone']) ?>">
                                     <i class="fa fa-phone"></i>
                                     <div class="contact-text">
                                         <h2>Phone</h2>
-                                        <p>+91-9917003456</p>
+                                        <p><?= htmlspecialchars($settings['contact_phone']) ?></p>
                                     </div>
                                 </a>
                             </div>
                             <div class="col-md-4 contact-item wow zoomIn" data-wow-delay="0.6s">
-                                <a href="mailto:info@yogabhawnamission.com">
+                                <a href="mailto:<?= htmlspecialchars($settings['contact_email']) ?>">
                                     <i class="far fa-envelope"></i>
                                     <div class="contact-text">
                                         <h2>Email</h2>
-                                        <p>info@yogabhawnamission.com</p>
+                                        <p><?= htmlspecialchars($settings['contact_email']) ?></p>
                                     </div>
                                 </a>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="col-12 wow fadeInUp" data-wow-delay="0.1s">
                         <div class="query-form" id="query">
                             <div class="container">
@@ -79,21 +75,11 @@
                                 <div class="row justify-content-center">
                                     <div class="col-lg-8 col-md-10">
                                         <form class="query-form-inner wow fadeInUp" data-wow-delay="0.2s" action="sendQuery.php" method="post">
-                                            <div class="form-group">
-                                                <input type="text" class="form-control" name="fullname" placeholder="Full Name" required>
-                                            </div>
-                                            <div class="form-group">
-                                                <input type="date" class="form-control" name="dob" placeholder="Date of Birth" required>
-                                            </div>
-                                            <div class="form-group">
-                                                <textarea class="form-control" name="address" rows="2" placeholder="Address" required></textarea>
-                                            </div>
-                                            <div class="form-group">
-                                                <input type="tel" class="form-control" name="phone" placeholder="Phone Number" required>
-                                            </div>
-                                            <div class="form-group">
-                                                <input type="email" class="form-control" name="email" placeholder="Email Address" required>
-                                            </div>
+                                            <div class="form-group"><input type="text" class="form-control" name="fullname" placeholder="Full Name" required></div>
+                                            <div class="form-group"><input type="date" class="form-control" name="dob" placeholder="Date of Birth" required></div>
+                                            <div class="form-group"><textarea class="form-control" name="address" rows="2" placeholder="Address" required></textarea></div>
+                                            <div class="form-group"><input type="tel" class="form-control" name="phone" placeholder="Phone Number" required></div>
+                                            <div class="form-group"><input type="email" class="form-control" name="email" placeholder="Email Address" required></div>
                                             <div class="form-group">
                                                 <select class="form-control" name="option" required>
                                                     <option value="">Query About</option>
@@ -101,9 +87,7 @@
                                                     <option value="Yoga Retreat">Yoga Retreat</option>
                                                 </select>
                                             </div>
-                                            <div class="text-center">
-                                                <button type="submit" class="btn">Submit</button>
-                                            </div>
+                                            <div class="text-center"><button type="submit" class="btn">Submit</button></div>
                                         </form>
                                     </div>
                                 </div>
@@ -113,25 +97,13 @@
                 </div>
             </div>
         </div>
-        <!-- Contact End -->
 
-
-        <!-- Footer Start -->
         <?php include 'includes/footer.php' ; ?>
-        <!-- Footer End -->
-
         <a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
-
         <div class="whatsapp widget-sec">
-          <a href="tel:+919917003456" class="cta-btn phone" title="Call Now">
-            <i class="fa fa-phone"></i>
-          </a>
-          <a aria-label="Chat on WhatsApp" href="https://wa.me/+919917003456" target="_blank" class="cta-btn whatsapp" title="Chat on WhatsApp">
-            <i class="fab fa-whatsapp"></i>
-          </a>
+          <a href="tel:+919917003456" class="cta-btn phone"><i class="fa fa-phone"></i></a>
+          <a href="https://wa.me/+919917003456" class="cta-btn whatsapp"><i class="fab fa-whatsapp"></i></a>
         </div>
-
-        <!-- JavaScript Libraries -->
         <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
         <script src="lib/easing/easing.min.js"></script>
@@ -139,12 +111,8 @@
         <script src="lib/owlcarousel/owl.carousel.min.js"></script>
         <script src="lib/isotope/isotope.pkgd.min.js"></script>
         <script src="lib/lightbox/js/lightbox.min.js"></script>
-        
-        <!-- Contact Javascript File -->
         <script src="mail/jqBootstrapValidation.min.js"></script>
         <script src="mail/contact.js"></script>
-
-        <!-- Template Javascript -->
         <script src="js/main.js"></script>
     </body>
 </html>

@@ -1,18 +1,29 @@
 <?php
-include 'db.php';
+// footer.php
+include 'db.php'; // Ensure this points to your DB connection
 
-// Fetch contact info
-$result  = $conn->query("SELECT * FROM contact_info LIMIT 1");
-$contact = $result->fetch_assoc() ?: [
-    'address'   => 'CMTC House, Kuthalwali, Johrigaon, Dehradun, Uttarakhand-248003', // Example data if DB fails
-    'phone'     => '+91-9917003456',          // Example data if DB fails
-    'email'     => 'retreatshivoham@gmail.com'           // Example data if DB fails
-];
+// 1. FETCH GLOBAL SETTINGS
+$settings = [];
+$res = $conn->query("SELECT * FROM site_settings");
+while ($row = $res->fetch_assoc()) {
+    $settings[$row['setting_key']] = $row['setting_value'];
+}
 
-// Make plain phone for tel/WhatsApp links
-$plainPhone  = !empty($contact['phone']) ? preg_replace('/\D+/', '', $contact['phone']) : '';
-$telHref     = $plainPhone ? "tel:{$plainPhone}" : "#";
-$waHref      = $plainPhone ? "https://wa.me/{$plainPhone}" : "#";
+// 2. FETCH SOCIAL LINKS
+$socials = $conn->query("SELECT * FROM social_links");
+
+// 3. FETCH EXTRA SECTIONS (like "Opening Hours")
+$extras = [];
+$extRes = $conn->query("SELECT * FROM site_extra_sections");
+while ($row = $extRes->fetch_assoc()) {
+    $extras[$row['section_slug']] = $row; // Store by slug for easy access
+}
+
+// Prepare phone links
+$phone = $settings['contact_phone'] ?? '';
+$plainPhone = preg_replace('/\D+/', '', $phone);
+$telHref = $plainPhone ? "tel:{$plainPhone}" : "#";
+$waHref = $plainPhone ? "https://wa.me/{$plainPhone}" : "#";
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -128,18 +139,17 @@ $waHref      = $plainPhone ? "https://wa.me/{$plainPhone}" : "#";
                     <div class="new-footer-col">
                         <h5>Address</h5>
                         <p>
-                            <?= nl2br(htmlspecialchars($contact['address'])) ?>
+                            <?= nl2br(htmlspecialchars($settings['address'] ?? '')) ?>
                         </p>
-                        <a href="https://maps.app.goo.gl/WQESzoeQDwMMgBuB9?g_st=ac" target="_blank" class="line-button">Get Direction</a>
+                        <a href="<?= htmlspecialchars($settings['map_embed_url'] ?? '#') ?>" target="_blank" class="line-button">Get Direction</a>
 
                         <h5 style="margin-top: 30px;">Connect with us</h5>
                         <div class="new-footer-socials">
-                            <?php if ($plainPhone): ?>
-                                <a href="<?= htmlspecialchars($waHref) ?>" target="_blank"><i class="fa fa-whatsapp"></i></a>
-                            <?php endif; ?>
-                            <a href="#"><i class="fa fa-facebook-square"></i></a>
-                            <a href="https://www.instagram.com/retreatshivoham?igsh=MWd1MTg1emRqOHE3Ng==" target="_blank"><i class="fa fa-instagram"></i></a>
-                            <a href="#"><i class="fa fa-youtube"></i></a>
+                            <?php while($soc = $socials->fetch_assoc()): ?>
+                                <a href="<?= htmlspecialchars($soc['url']) ?>" target="_blank" title="<?= htmlspecialchars($soc['platform_name']) ?>">
+                                    <i class="<?= htmlspecialchars($soc['icon']) ?>"></i>
+                                </a>
+                            <?php endwhile; ?>
                         </div>
                     </div>
                 </div>
@@ -149,9 +159,9 @@ $waHref      = $plainPhone ? "https://wa.me/{$plainPhone}" : "#";
                         <h5>Navigation</h5>
                         <ul>
                             <li><a href="index.php">Home</a></li>
-                            <li><a href="rooms.php">Rooms</a></li>
                             <li><a href="about.php">About</a></li>
-                            <li><a href="blog.php">Blogs</a></li>
+                            <li><a href="services.php">Services</a></li>
+                            <li><a href="classes.php">Our Classes</a></li>
                             <li><a href="contact.php">Contact</a></li>
                         </ul>
                     </div>
@@ -162,24 +172,26 @@ $waHref      = $plainPhone ? "https://wa.me/{$plainPhone}" : "#";
                         <h5>Reservation</h5>
                         <p class="reservation-links">
                             <?php if ($plainPhone): ?>
-                                <a href="<?= htmlspecialchars($telHref) ?>"><?= htmlspecialchars($contact['phone']) ?></a><br>
-                            <?php else: ?>
-                                <?= htmlspecialchars($contact['phone']) ?><br>
+                                <a href="<?= htmlspecialchars($telHref) ?>"><?= htmlspecialchars($settings['contact_phone']) ?></a><br>
                             <?php endif; ?>
-                            <a href="mailto:<?= htmlspecialchars($contact['email']) ?>"><?= htmlspecialchars($contact['email']) ?></a>
+                            <a href="mailto:<?= htmlspecialchars($settings['contact_email'] ?? '') ?>"><?= htmlspecialchars($settings['contact_email'] ?? '') ?></a>
                         </p>
                     </div>
                 </div>
 
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="new-footer-col">
-                        <h5>Opening Hours</h5>
-                        <ul>
-                            <li>Mon - Fri: 9:00 AM - 6:00 PM</li>
-                            <li>Sat: 10:00 AM - 4:00 PM</li>
-                            <li>Sun: Closed</li>
-                        </ul>
-                        <p style="margin-top: 20px;">Check-in: 12 PM | Check-out: 11 AM</p>
+                        <?php if(isset($extras['opening_hours'])): ?>
+                            <h5><?= htmlspecialchars($extras['opening_hours']['title']) ?></h5>
+                            <?= $extras['opening_hours']['content'] ?> 
+                        <?php else: ?>
+                            <h5>Opening Hours</h5>
+                            <ul>
+                                <li>Mon - Fri: 9:00 AM - 6:00 PM</li>
+                                <li>Sat: 10:00 AM - 4:00 PM</li>
+                                <li>Sun: Closed</li>
+                            </ul>
+                        <?php endif; ?>
                     </div>
                 </div>
 

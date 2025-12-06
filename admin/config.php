@@ -1,13 +1,13 @@
 <?php
 if ($_SERVER['HTTP_HOST'] === 'localhost') {
-    define('BASE_URL', 'http://localhost/ShivohamRetreat/admin/');
+    define('BASE_URL', 'http://localhost/YogaBhawnaMission/admin/');
 } else {
-    define('BASE_URL', 'https://shivohamretreat.com/admin/');
+    define('BASE_URL', 'https://yogbhawnamission.com/admin/');
 }
 
 // Absolute path for server-side includes
 if (!defined('BASE_PATH')) {
-    define('BASE_PATH', $_SERVER['DOCUMENT_ROOT'] . '/ShivohamRetreat/admin/');
+    define('BASE_PATH', $_SERVER['DOCUMENT_ROOT'] . '/YogaBhawnaMission/admin/');
 }
 
 // Subfolders for assets (safe for deep nested files)
